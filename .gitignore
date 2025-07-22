@@ -1,9 +1,0 @@
-node_modules
-cache/
-benchmark/data
-__pycache__
-.venv
-.pytest_cache
-.env
-run.log
-*.db
