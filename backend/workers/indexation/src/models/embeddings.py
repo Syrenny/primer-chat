@@ -1,10 +1,10 @@
-from typing import Literal, List
+from typing import List, Literal
 
 from pydantic import BaseModel, field_validator
 from src.config import config
 
 
-class EmbeddingData(BaseModel):
+class EmbeddingsData(BaseModel):
     index: int
     embedding: List[float]
     object: Literal["embedding"] = "embedding"
@@ -19,13 +19,22 @@ class EmbeddingData(BaseModel):
         return values
 
 
-class EmbeddingUsage(BaseModel):
-    prompt_tokens: int
-    total_tokens: int
+class EmbeddingsUsage(BaseModel):
+    prompt_tokens: int = 0
+    total_tokens: int = 0
+
+    def __iadd__(self, other: "EmbeddingsUsage") -> "EmbeddingsUsage":
+        self.prompt_tokens += other.prompt_tokens
+        self.total_tokens += other.total_tokens
+        return self
 
 
 class EmbeddingsResponse(BaseModel):
     object: Literal["list"] = "list"
-    data: List[EmbeddingData]
+    data: List[EmbeddingsData]
     model: str
-    usage: EmbeddingUsage
+    usage: EmbeddingsUsage
+
+    @property
+    def embeddings(self) -> List[List[float]]:
+        return [item.embedding for item in self.data]

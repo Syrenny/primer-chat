@@ -1,100 +1,175 @@
 import asyncio
-from typing import List
+from itertools import islice
+from typing import Iterable, List
 
 import fitz
 from loguru import logger
+from src.adapters.embeddings import Embeddings
+from src.config import config
+from src.models.embeddings import EmbeddingsUsage
 from src.models.indexation import ChunkPosition, IndexationResult, IndexedChunk
 from src.models.openai import Usage
+from src.models.segmentation import LineSignature, StyleKey
 from src.services.segmentation import SegmentationService
 
 
 class FitzUtils:
     @classmethod
-    def get_line_bbox(cls, line: dict) -> fitz.Rect:
-        """Получить объединённый bbox всех спанов одной строки"""
-        rect = None
-        for span in line.get("spans", []):
-            span_rect = fitz.Rect(span["bbox"]).normalize()
-            rect = span_rect if rect is None else rect | span_rect
-        return rect
-
-    @classmethod
-    def get_lines_bbox(cls, lines: List[dict]) -> tuple[int, int, int, int]:
+    def get_chunk_xyxy(
+        cls, lines: List[LineSignature]
+    ) -> tuple[float, float, float, float]:
         """Получить объединённый bbox для нескольких строк"""
         full_bbox = None
         for line in lines:
-            line_bbox = cls.get_line_bbox(line)
+            line_bbox = fitz.Rect(line.style.bbox)
             if line_bbox is not None:
                 full_bbox = line_bbox if full_bbox is None else full_bbox | line_bbox
         if full_bbox is None:
             full_bbox = fitz.Rect(0, 0, 0, 0)
-        return tuple(full_bbox.normalize())
+        return tuple(full_bbox)
 
     @classmethod
-    def get_content(cls, lines: List[dict]) -> str:
-        """Вернуть текст по индексам"""
-        text = "\n".join(
-            " ".join(span["text"] for span in line.get("spans", []) if span.get("text"))
-            for line in lines
-        )
+    def get_content(cls, lines: List[LineSignature]) -> str:
+        text = " ".join([line.content for line in lines])
         return text.strip()
 
     @classmethod
-    def rect_to_tuple(cls, rect: fitz.Rect) -> tuple[float, float, float, float]:
-        """Преобразовать bbox в кортеж (x0, y0, x1, y1)"""
-        return tuple(rect)
+    def style_key(cls, span: dict) -> StyleKey:
+        return StyleKey(
+            font=span["font"],
+            size=round(span["size"], 2),
+            flags=span.get("flags", 0),
+            bbox=span.get("bbox"),
+        )
+
+    @classmethod
+    def extract_lines(cls, pages: List[fitz.Page]) -> List[LineSignature]:
+        result = []
+        line_index = 0
+
+        for page in pages:
+            text = page.get_text("dict")
+            for block in text.get("blocks", []):
+                if block.get("type") != 0:
+                    continue
+
+                for line in block.get("lines", []):
+                    line_content = " ".join(
+                        span["text"]
+                        for span in line.get("spans", [])
+                        if span.get("text")
+                    )
+                    if not line_content.strip():
+                        continue
+
+                    main_span = line["spans"][0]
+                    result.append(
+                        LineSignature(
+                            index=line_index,
+                            content=line_content,
+                            style=cls.style_key(main_span),
+                        )
+                    )
+                    line_index += 1
+
+        return result
+
+
+class BatchEmbedder:
+    def __init__(self) -> None:
+        self._buffered_texts: list[str] = []
+        self.embeddings = Embeddings()
+        self.embeddings_usage = EmbeddingsUsage()
+
+    def append(self, content: str) -> None:
+        self._buffered_texts.append(content)
+
+    def _batch_chunks(self) -> Iterable[list[str]]:
+        it = iter(self._buffered_texts)
+        while True:
+            batch = list(islice(it, config.embeddings_batch_size))
+            if not batch:
+                break
+            yield batch
+
+    async def compute(self) -> list[list[float]]:
+        self.flush()
+        batches = list(self._batch_chunks())
+
+        tasks = [self.embeddings.embed(batch) for batch in batches]
+
+        result: list[list[float]] = []
+        for embeddings_result in await asyncio.gather(*tasks):
+            result += embeddings_result.embeddings
+            self.embeddings_usage += embeddings_result.usage
+
+        return result
+
+    def flush(self) -> None:
+        self._buffered_texts = []
+        self.embeddings_usage = EmbeddingsUsage()
 
 
 class IndexationService:
     def __init__(self) -> None:
         self.segmentation_service = SegmentationService()
+        self.embedder = BatchEmbedder()
+
+    def batch_pages(self, pages: list[fitz.Page]) -> Iterable[list[LineSignature]]:
+        it = iter(pages)
+        while True:
+            batch = list(islice(it, config.pages_batch_size))
+            if not batch:
+                break
+            yield FitzUtils.extract_lines(batch)
 
     async def run(self, pdf_bytes: bytes) -> IndexationResult:
         chunks: list[IndexedChunk] = []
-        usage: Usage = Usage(prompt_tokens=0, completion_tokens=0, total_tokens=0)
+        llm_usage = Usage()
 
         with fitz.open(stream=pdf_bytes, filetype="pdf") as doc:
-            pages = list(doc.pages())
-
-            # 👇 Запускаем параллельно сегментацию по страницам
+            batches = list(self.batch_pages(doc.pages()))
             segmentation_tasks = [
-                self.segmentation_service.segment([page]) for page in pages
+                self.segmentation_service.limited_segment(batch) for batch in batches
             ]
             segmentation_results = await asyncio.gather(*segmentation_tasks)
 
-            for page_num, (page, (result, current_usage)) in enumerate(
-                zip(pages, segmentation_results)
+            for batch_num, (batch, (result, current_usage)) in enumerate(
+                zip(batches, segmentation_results)
             ):
-                usage.prompt_tokens += current_usage.prompt_tokens
-                usage.completion_tokens += current_usage.completion_tokens
-                usage.total_tokens += current_usage.total_tokens
-
-                text_dict = page.get_text("dict")
-                lines = []
-
-                for block in text_dict.get("blocks", []):
-                    if block.get("type") != 0:
-                        continue
-                    lines.extend(block.get("lines", []))
+                llm_usage += current_usage
 
                 for chunk in result.chunks:
-                    chunk_lines = lines[chunk.start_line : chunk.end_line + 1]
+                    chunk_lines = batch[chunk.start_line : chunk.end_line + 1]
 
-                    position = ChunkPosition(
-                        xyxy=FitzUtils.get_lines_bbox(chunk_lines),
+                    screen_position = ChunkPosition(
+                        xyxy=FitzUtils.get_chunk_xyxy(chunk_lines),
                         start_line=chunk.start_line,
                         end_line=chunk.end_line,
                     )
 
                     content = FitzUtils.get_content(chunk_lines)
 
+                    self.embedder.append(content)
+
                     chunks.append(
                         IndexedChunk(
-                            content=content, html_tag=chunk.html_tag, position=position
+                            content=content,
+                            embedding=[],
+                            html_tag=chunk.html_tag,
+                            position=screen_position,
                         )
                     )
                     logger.info(
-                        f"Page {page_num}: Chunk [{chunk.start_line}-{chunk.end_line}] → <{chunk.html_tag}>"
+                        f"Batch {batch_num}: Chunk [{chunk.start_line}-{chunk.end_line}] → <{chunk.html_tag}>"
                     )
 
-        return IndexationResult(chunks=chunks, usage=usage)
+        chunks_embeddings = await self.embedder.compute()
+        for i, embedding in enumerate(chunks_embeddings):
+            chunks[i].embedding = embedding
+
+        return IndexationResult(
+            chunks=chunks,
+            llm_usage=llm_usage,
+            embeddings_usage=self.embedder.embeddings_usage,
+        )

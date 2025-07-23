@@ -16,9 +16,15 @@ class Choice(BaseModel):
 
 
 class Usage(BaseModel):
-    prompt_tokens: int
-    completion_tokens: int
-    total_tokens: int
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    total_tokens: int = 0
+
+    def __iadd__(self, other: "Usage") -> "Usage":
+        self.prompt_tokens += other.prompt_tokens
+        self.completion_tokens += other.completion_tokens
+        self.total_tokens += other.total_tokens
+        return self
 
 
 class ChatCompletionResponse(BaseModel):

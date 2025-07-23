@@ -1,5 +1,4 @@
 from typing import Literal
-
 from pydantic import BaseModel
 
 HTMLTag = Literal["h1", "h2", "h3", "p"]
@@ -9,6 +8,7 @@ class StyleKey(BaseModel):
     font: str
     size: float
     flags: int
+    bbox: tuple[float, float, float, float]
 
 
 class LineSignature(BaseModel):

@@ -2,8 +2,10 @@ from typing import List
 
 from pydantic import BaseModel
 
-from .segmentation import HTMLTag
+from .embeddings import EmbeddingsUsage
 from .openai import Usage
+from .segmentation import HTMLTag
+
 
 class ChunkPosition(BaseModel):
     xyxy: tuple[float, float, float, float]
@@ -13,10 +15,12 @@ class ChunkPosition(BaseModel):
 
 class IndexedChunk(BaseModel):
     content: str
+    embedding: list[float]
     html_tag: HTMLTag
     position: ChunkPosition
 
 
 class IndexationResult(BaseModel):
     chunks: List[IndexedChunk]
-    usage: Usage
+    llm_usage: Usage
+    embeddings_usage: EmbeddingsUsage

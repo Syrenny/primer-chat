@@ -30,6 +30,12 @@ class Config(BaseModel):
     embeddings_model: str
     embeddings_base_url: str
     embeddings_dimensions: int
+    embeddings_throttle_rate_limit: int
+    embeddings_throttle_period: float
+
+    max_concurrent_segments: int
+    pages_batch_size: int
+    embeddings_batch_size: int
 
 
 def load_config(env: str) -> Config:
