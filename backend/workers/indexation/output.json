@@ -1,0 +1,2126 @@
+{
+  "type": "default",
+  "result": {
+    "chunks": [
+      {
+        "content": "Seven Failure Points When Engineering a Retrieval Augmented\nGeneration System",
+        "html_tag": "h1",
+        "position": {
+          "xyxy": [
+            58.27899932861328,
+            82.76910400390625,
+            553.7211303710938,
+            119.90949249267578
+          ],
+          "start_line": 0,
+          "end_line": 1
+        }
+      },
+      {
+        "content": "Scott Barnett, Stefanus Kurniawan, Srikanth Thudumu, Zach Brannelly, Mohamed Abdelrazek\n{scott.barnett,stefanus.kurniawan,srikanth.thudumu,zach.brannelly,mohamed.abdelrazek}@deakin.edu.au\nApplied Artificial Intelligence Institute\nGeelong, Australia",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            76.86300659179688,
+            129.7428436279297,
+            536.4447631835938,
+            177.16555786132812
+          ],
+          "start_line": 2,
+          "end_line": 5
+        }
+      },
+      {
+        "content": "ABSTRACT",
+        "html_tag": "h2",
+        "position": {
+          "xyxy": [
+            53.79798889160156,
+            186.91558837890625,
+            111.9434814453125,
+            197.82469177246094
+          ],
+          "start_line": 6,
+          "end_line": 6
+        }
+      },
+      {
+        "content": "Software engineers are increasingly adding semantic search capabil-\nities to applications using a strategy known as Retrieval Augmented\nGeneration (RAG). A RAG system involves finding documents that\nsemantically match a query and then passing the documents to a\nlarge language model (LLM) such as ChatGPT to extract the right\nanswer using an LLM. RAG systems aim to: a) reduce the problem\nof hallucinated responses from LLMs, b) link sources/references\nto generated responses, and c) remove the need for annotating\ndocuments with meta-data. However, RAG systems suffer from lim-\nitations inherent to information retrieval systems and from reliance\non LLMs. In this paper, we present an experience report on the\nfailure points of RAG systems from three case studies from separate\ndomains: research, education, and biomedical. We share the lessons\nlearned and present 7 failure points to consider when designing a\nRAG system. The two key takeaways arising from our work are: 1)\nvalidation of a RAG system is only feasible during operation, and\n2) the robustness of a RAG system evolves rather than designed in\nat the start. We conclude with a list of potential research directions\non RAG systems for the software engineering community.",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            53.57400131225586,
+            201.68386840820312,
+            295.55670166015625,
+            407.9102783203125
+          ],
+          "start_line": 7,
+          "end_line": 25
+        }
+      },
+      {
+        "content": "CCS CONCEPTS\n•  Software and its engineering  → Empirical software valida-\ntion .",
+        "html_tag": "h2",
+        "position": {
+          "xyxy": [
+            53.79800033569336,
+            420.1935729980469,
+            295.64984130859375,
+            455.2847595214844
+          ],
+          "start_line": 26,
+          "end_line": 28
+        }
+      },
+      {
+        "content": "KEYWORDS\nRetrieval Augmented Generation, RAG, SE4AI, Case Study\nACM Reference Format:",
+        "html_tag": "h2",
+        "position": {
+          "xyxy": [
+            53.50300216674805,
+            467.1695556640625,
+            267.7901611328125,
+            507.0682373046875
+          ],
+          "start_line": 29,
+          "end_line": 31
+        }
+      },
+      {
+        "content": "Scott Barnett, Stefanus Kurniawan, Srikanth Thudumu, Zach Brannelly, Mo-\nhamed Abdelrazek . 2024. Seven Failure Points When Engineering a Retrieval\nAugmented Generation System. In  Proceedings of 3rd International Confer-\nence on AI Engineering — Software Engineering for AI (CAIN 2024).  ACM,\nNew York, NY, USA, 6 pages. https://doi.org/10.1145/nnnnnnn.nnnnnnn",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            53.51900100708008,
+            508.7059631347656,
+            295.3907165527344,
+            556.5269775390625
+          ],
+          "start_line": 32,
+          "end_line": 36
+        }
+      },
+      {
+        "content": "1\nINTRODUCTION",
+        "html_tag": "h2",
+        "position": {
+          "xyxy": [
+            53.79800033569336,
+            571.7335815429688,
+            156.52899169921875,
+            582.6427001953125
+          ],
+          "start_line": 37,
+          "end_line": 38
+        }
+      },
+      {
+        "content": "The new advancements of Large Language Models (LLMs), includ-\ning ChatGPT, have given software engineers new capabilities to\nPermission to make digital or hard copies of all or part of this work for personal or\nclassroom use is granted without fee provided that copies are not made or distributed\nfor profit or commercial advantage and that copies bear this notice and the full citation\non the first page. Copyrights for components of this work owned by others than ACM\nmust be honored. Abstracting with credit is permitted. To copy otherwise, or republish,\nto post on servers or to redistribute to lists, requires prior specific permission and/or a\nfee. Request permissions from permissions@acm.org.\nCAIN 2024, April 2024, Lisbon, Portugal\n© 2024 Association for Computing Machinery.\nACM ISBN 978-x-xxxx-xxxx-x/YY/MM...$15.00\nhttps://doi.org/10.1145/nnnnnnn.nnnnnnn\nbuild new HCI solutions, complete complex tasks, summarise docu-\nments, answer questions in a given artefact(s), and generate new\ncontent. However, LLMs suffer from limitations when it comes\nto up-to-date knowledge or domain-specific knowledge currently\ncaptured in company’s repositories. Two options to address this\nproblem are: a) Finetuning LLMs (continue training an LLM using\ndomain specific artifacts) which requires managing or serving a\nfine-tuned LLM; or b) use Retrieval-Augmented Generation (RAG)\nSystems that rely on LLMs for generation of answers using existing\n(extensible) knowledge artifacts. Both options have pros and cons\nrelated to privacy/security of data, scalability, cost, skills required,\netc. In this paper, we focus on the RAG option.\nRetrieval-Augmented Generation (RAG) systems offer a com-\npelling solution to this challenge. By integrating retrieval mecha-\nnisms with the generative capabilities of LLMs, RAG systems can\nsynthesise contextually relevant, accurate, and up-to-date informa-\ntion. A Retrieval-Augmented Generation (RAG) system combines\ninformation retrieval capabilities, and generative prowess of LLMs.\nThe retrieval component focuses on retrieving relevant information\nfor a user query from a data store. The generation component fo-\ncuses on using the retrieved information as a context to generate an\nanswer for the user query. RAG systems are an important use case\nas all unstructured information can now be indexed and available\nto query reducing development time no knowledge graph creation\nand limited data curation and cleaning.\nSoftware engineers building RAG systems are expected to pre-\nprocess domain knowledge captured as artifacts in different formats,\nstore processed information in appropriate data store (vector data-\nbase), implement or integrate the right query-artifact matching\nstrategy, rank matched artifacts, and call the LLMs API passing in\nuser queries and context documents. New advances for building\nRAG systems are constantly emerging [ 8 ,  12 ] but how they relate\nand perform for a specific application context has to be discovered.\nIn this work we present the lessons learned and 7 failure points\narising from 3 case studies. The purpose of this paper is to provide\n1) a reference to practitioners and 2) to present a research road\nmap for RAG systems. To the best of our knowledge, we present\nthe first empirical insight into the challenges with creating robust\nRAG systems. As advances in LLMs continue to take place, the\nsoftware engineering community has a responsibility to provide\nknowledge on how to realise robust systems with LLMs. This work",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            53.31700134277344,
+            187.98489379882812,
+            559.7210083007812,
+            708.7417602539062
+          ],
+          "start_line": 39,
+          "end_line": 92
+        }
+      },
+      {
+        "content": "is an important step for robustness in building RAG systems.\nResearch questions for this work include:\n•  What are the failure points that occur when engineering a RAG",
+        "html_tag": "h2",
+        "position": {
+          "xyxy": [
+            317.9549865722656,
+            637.2999267578125,
+            558.200927734375,
+            676.7044067382812
+          ],
+          "start_line": 93,
+          "end_line": 95
+        }
+      },
+      {
+        "content": "system?  (section 5) We present an empirical experiment using\nthe BioASQ data set to report on potential failure points. The\nexperiment involved 15,000 documents and 1000 question\narXiv:2401.05856v1  [cs.SE]  11 Jan 2024",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            10.940000534057617,
+            218.91998291015625,
+            558.2041015625,
+            709.1402587890625
+          ],
+          "start_line": 96,
+          "end_line": 99
+        }
+      },
+      {
+        "content": "CAIN 2024, April 2024, Lisbon, Portugal\nScott Barnett, Stefanus Kurniawan, Srikanth Thudumu, Zach Brannelly, Mohamed Abdelrazek",
+        "html_tag": "h2",
+        "position": {
+          "xyxy": [
+            53.79800033569336,
+            62.163856506347656,
+            556.4556274414062,
+            69.13765716552734
+          ],
+          "start_line": 0,
+          "end_line": 1
+        }
+      },
+      {
+        "content": "and answer pairs. We indexed all documents then ran the\nqueries and stored the generated responses using GPT-4. All\nquestion and answer pairs were then validated with OpenAI\nevals   1 . Manual inspection (all discrepancies, all flagged as\nincorrect, and a sample of correct labels) was analysed to\nidentify the patterns.",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            78.20700073242188,
+            86.47586822509766,
+            294.0461730957031,
+            150.23626708984375
+          ],
+          "start_line": 2,
+          "end_line": 7
+        }
+      },
+      {
+        "content": "•  What are the key considerations when engineering a RAG\nsystem?  (section 6) We present the lessons learned from three\ncase studies involving the implementation of a RAG system.",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            69.76499938964844,
+            152.02218627929688,
+            295.4248962402344,
+            183.11328125
+          ],
+          "start_line": 8,
+          "end_line": 10
+        }
+      },
+      {
+        "content": "This presents the challenges faced and insights gained.\nContributions arising from this work include:\n•  A catalogue of failure points (FP) that occur in RAG systems.\n•  An experience report from 3 case studies of implementing a\nRAG system. Two currently running at Deakin University.\n•  A research direction for RAG systems based on the lessons\nlearned from the 3 case studies.",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            63.76100158691406,
+            185.10586547851562,
+            295.4257507324219,
+            265.0152587890625
+          ],
+          "start_line": 11,
+          "end_line": 17
+        }
+      },
+      {
+        "content": "2\nRELATED WORK",
+        "html_tag": "h2",
+        "position": {
+          "xyxy": [
+            53.79800033569336,
+            276.8525390625,
+            157.587158203125,
+            287.7616271972656
+          ],
+          "start_line": 18,
+          "end_line": 19
+        }
+      },
+      {
+        "content": "Retrieval augmented generation encompasses using documents\nto augment large language models through pre-training and at\ninference time [ 7 ,  9 ,  12 ]. Due to the compute cost, data preparation\ntime and required resources using RAG without training or fine-\ntuning is an attractive proposition. However, challenges arise when\nusing large language models for information extraction such as\nperformance with long text [8].",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            53.79800033569336,
+            291.6208801269531,
+            295.5561218261719,
+            366.34027099609375
+          ],
+          "start_line": 20,
+          "end_line": 26
+        }
+      },
+      {
+        "content": "A recent survey [ 19 ] showed that large language models are\nused across the RAG pipeline including retriever, data generation,\nrewriter, and reader. Our work complements this survey by taking\na software engineering perspective to shine a light on what issues",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            53.79800033569336,
+            368.3328857421875,
+            295.0342712402344,
+            410.17626953125
+          ],
+          "start_line": 27,
+          "end_line": 30
+        }
+      },
+      {
+        "content": "engineers will face and what software engineering research is nec-\nessary to realise solutions with the current state-of-the-art RAG\nsystems.",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            53.79800033569336,
+            412.16888427734375,
+            295.5600891113281,
+            443.05328369140625
+          ],
+          "start_line": 31,
+          "end_line": 33
+        }
+      },
+      {
+        "content": "Emerging work has looked at benchmarking RAG systems [ 3 ]\nbut not at the failures occurring during implementation. Software\nengineering research has investigated the use of RAG systems for\ncode-related tasks [ 15 ]. However, the application of RAG systems\nis broader than software engineering tasks. This paper comple-\nments existing work by presenting challenges faced during the\nimplementation of a RAG system with a focus on practitioners.",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            53.79800033569336,
+            445.0458679199219,
+            295.55609130859375,
+            519.7652587890625
+          ],
+          "start_line": 34,
+          "end_line": 40
+        }
+      },
+      {
+        "content": "Errors and failures that arise from RAG systems overlap with\nother information retrieval systems including 1) no metrics for\nquery rewriting, 2) document re-ranking, and 3) effective content\nsummarisation [ 19 ]. Our results confirm this The unique aspects\nare related to the semantic and generative nature of the use of large\nlanguage models including evaluating factual accuracy [16].",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            53.79800033569336,
+            521.7579345703125,
+            294.21173095703125,
+            585.519287109375
+          ],
+          "start_line": 41,
+          "end_line": 46
+        }
+      },
+      {
+        "content": "3\nRETRIEVAL AUGMENTED GENERATION",
+        "html_tag": "h2",
+        "position": {
+          "xyxy": [
+            53.79800033569336,
+            597.3565673828125,
+            279.0054931640625,
+            608.2656860351562
+          ],
+          "start_line": 47,
+          "end_line": 48
+        }
+      },
+      {
+        "content": "With the explosion in popularity of large language model services\nsuch as ChatGPT 2 , Claude 3 , and Bard   4 , people have explored their\nuse as a question and answering systems. While the performance\nis impressive [ 16 ] there are two fundamental challenges: 1) hallu-\ncinations - where the LLM produces a response that looks right\n1 https://github.com/openai/evals\n2 https://chat.openai.com/\n3 https://claude.ai/\n4 https://bard.google.com/\nbut is incorrect, and 2) unbounded - no way to direct or update\nthe content of the output (other than through prompt engineering).\nA RAG system is an information retrieval approach designed to",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            53.36800003051758,
+            86.47586822509766,
+            559.581787109375,
+            708.7427978515625
+          ],
+          "start_line": 49,
+          "end_line": 60
+        }
+      },
+      {
+        "content": "overcome the limitations of using a LLM directly.\nRAG works by taking a natural language query is converted into\nan embedding which is used to semantically search a set of docu-\nments. Retrieved documents are then passed to a large language\nmodel to generate an answer. An overview of a RAG system is\nshown in Figure 1 as two separate processes, Index and Query. See\nthis survey for more details [19]\n3.1\nIndex Process\nIn a RAG system, the retrieval system works using embeddings\nthat provide a compressed semantic representation of the docu-\nment. An embedding is expressed as a vector of numbers. During\nthe Index process each document is split into smaller chunks that\nare converted into an embedding using an embedding model. The\noriginal chunk and the embedding are then indexed in a database.\nSoftware engineers face design decisions around how best to chunk\nthe document and how large a chunk should be. If chunks are too\nsmall certain questions cannot be answered, if the chunks are too\nlong then the answers include generated noise.\nDifferent types of documents require different chunking and pro-\ncessing stages. For example, video content requires a transcription\npipeline to extract the audio and convert to text prior to encoding\n(see subsection 4.2. The choice of which embedding to use also\nmatters as changing the embedding strategy requires re-indexing\nall chunks. An embedding should be chosen based on the ability to\nsemantically retrieve correct responses. This process depends on\nthe size of the chunks, the types of questions expected, the structure\nof the content and the application domain.",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            317.6860046386719,
+            119.3528823852539,
+            559.7211303710938,
+            429.6882629394531
+          ],
+          "start_line": 61,
+          "end_line": 88
+        }
+      },
+      {
+        "content": "3.2\nQuery Process",
+        "html_tag": "h2",
+        "position": {
+          "xyxy": [
+            317.9549865722656,
+            444.310546875,
+            413.20233154296875,
+            455.2196350097656
+          ],
+          "start_line": 89,
+          "end_line": 90
+        }
+      },
+      {
+        "content": "The Query process takes place at run time. A question expressed\nas natural language is first converted into a general query. To gen-\neralise the query a large language model is used which enables\nadditional context such as previous chat history to be included\nin the new query. An embedding is then calculated from the new\nquery to use for locating relevant documents from the database.\nTop-k similar documents are retrieved using a similarity method\nsuch as cosine similarity (vector databases have techniques such as\ninverted indexes to speed up retrieval time). The intuition is that\nchunks that are semantically close to the query are likely to contain\nthe answer.\nRetrieved documents are then re-ranked to maximise the likeli-\nhood that the chunk with the answer is located near the top. The\nnext stage is the Consolidator which is responsible for processing\nthe chunks. This stage is needed to overcome the limitations of\nlarge language models 1) token limit and 2) rate limit. Services such\nas OpenAI have hard limits on the amount of text to include in a\nprompt. This restricts the number of chunks to include in a prompt\nto extract out an answer and a reduction strategy is needed to chain\nprompts to obtain an answer. These online services also restrict the",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            317.6860046386719,
+            459.0788879394531,
+            559.7182006835938,
+            676.2642822265625
+          ],
+          "start_line": 91,
+          "end_line": 110
+        }
+      },
+      {
+        "content": "number of tokens to use within a time frame restricting the latency\nof a system. Software engineers need to consider these tradeoffs\nwhen designing a RAG system.",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            317.62298583984375,
+            678.2568969726562,
+            558.4306030273438,
+            709.1402587890625
+          ],
+          "start_line": 111,
+          "end_line": 113
+        }
+      },
+      {
+        "content": "Seven Failure Points When Engineering a Retrieval Augmented Generation System\nCAIN 2024, April 2024, Lisbon, Portugal",
+        "html_tag": "h2",
+        "position": {
+          "xyxy": [
+            53.79800033569336,
+            62.163856506347656,
+            558.1990356445312,
+            69.13765716552734
+          ],
+          "start_line": 0,
+          "end_line": 1
+        }
+      },
+      {
+        "content": "Figure 1: Indexing and Query processes required for creating a Retrieval Augmented Generation (RAG) system. The indexing\nprocess is typically done at development time and queries at runtime. Failure points identified in this study are shown in red\nboxes. All required stages are underlined. Figure expanded from [19].\nThe final stage of a RAG pipeline is when the answer is extracted",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            53.79800033569336,
+            281.8085632324219,
+            558.205322265625,
+            340.478271484375
+          ],
+          "start_line": 2,
+          "end_line": 5
+        }
+      },
+      {
+        "content": "from the generated text. Readers are responsible for filtering the\nnoise from the prompt, adhering to formatting instructions (i.e. an-\nswer the question as a list of options), and producing the output to\nreturn for the query. Implementation of a RAG system requires cus-\ntomising multiple prompts to process questions and answers. This\nprocess ensures that questions relevant for the domain are returned.\nThe use of large language models to answer real time questions\nfrom documents opens up new application domains where question\nand answering is new capability. Thus, RAG systems are difficult\nto test as no data exists and needs to be experimentally discov-\nered through either a) synthetic data generation, or b) piloting the\nsystem with minimal testing.",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            53.52899932861328,
+            342.47088623046875,
+            295.5567626953125,
+            471.9852600097656
+          ],
+          "start_line": 6,
+          "end_line": 17
+        }
+      },
+      {
+        "content": "4\nCASE STUDIES",
+        "html_tag": "h2",
+        "position": {
+          "xyxy": [
+            53.79800033569336,
+            484.43255615234375,
+            146.1107940673828,
+            495.3416442871094
+          ],
+          "start_line": 18,
+          "end_line": 19
+        }
+      },
+      {
+        "content": "This study conducted three case studies to discover the challenges\nthat arise when implementing RAG systems. A summary of each of\nthe case studies is shown in Table 1. All scripts, data, and examples\nof each of the failure points for the BioASQ case study are available\nonline   5 . The other two case studies have been excluded due to\nconfidentiality concerns.",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            53.52899932861328,
+            499.20086669921875,
+            294.04718017578125,
+            562.9612426757812
+          ],
+          "start_line": 20,
+          "end_line": 25
+        }
+      },
+      {
+        "content": "4.1\nCognitive Reviewer",
+        "html_tag": "h2",
+        "position": {
+          "xyxy": [
+            53.79800033569336,
+            575.4085693359375,
+            175.37989807128906,
+            586.3176879882812
+          ],
+          "start_line": 26,
+          "end_line": 27
+        }
+      },
+      {
+        "content": "Cognitive Reviewer is a RAG system designed to support researchers\nin analysing scientific documents. Researchers specify a research\nquestion or objective and then upload a collection of related re-\nsearch papers. All of the documents are then ranked in accordance\nwith the stated objective for the researcher to manually review.\nThe researcher can also ask questions directly against all of the\ndocuments. Cognitive Reviewer is currently used by PhD students\nfrom Deakin University to support their literature reviews. The\nCognitive Reviewer does the Index process at run time and relies\n5 https://figshare.com/s/fbf7805b5f20d7f7e356",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            53.46699905395508,
+            590.1759033203125,
+            295.5561218261719,
+            708.7417602539062
+          ],
+          "start_line": 28,
+          "end_line": 37
+        }
+      },
+      {
+        "content": "on a robust data processing pipeline to handle uploaded documents\ni.e. no quality control possible at development time. This system\nalso uses a ranking algorithm to sort the uploaded documents.",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            317.9549865722656,
+            331.5118713378906,
+            558.2039184570312,
+            362.3962707519531
+          ],
+          "start_line": 38,
+          "end_line": 40
+        }
+      },
+      {
+        "content": "4.2\nAI Tutor",
+        "html_tag": "h2",
+        "position": {
+          "xyxy": [
+            317.9549865722656,
+            375.0475769042969,
+            385.3404846191406,
+            385.9566650390625
+          ],
+          "start_line": 41,
+          "end_line": 42
+        }
+      },
+      {
+        "content": "The AI Tutor is a RAG system where students ask questions about\nthe unit and answers are sourced from the learning content. Stu-\ndents are able to verify the answers by accessing a sources list from\nwhere the answer came from. The AI Tutor works by integrating\ninto Deakin’s learning management system, indexing all of the\ncontent including PDF documents, videos, and text documents. As\npart of the Index process, videos are transcribed using the deep\nlearning model Whisper [ 17 ] before being chunked. The AI Tutor\nwas developed between August 2023 to November 2023 for a pilot\nin a unit with 200 students that commenced the 30th of October\n2023. Our intention is to present the lessons learned during imple-\nmentation and present a followup findings at the conclusion of the\npilot. This RAG pipeline includes a rewriter to generalise queries.\nWe implemented a chat interface where previous dialogue between\nthe user and the AI Tutor was used as part of the context for each\nquestion. The rewriter considers this context and rewrites the query\nto resolve ambiguous requests such as ‘Explain this concept further.’",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            317.5249938964844,
+            389.8158874511719,
+            559.7135620117188,
+            574.1253051757812
+          ],
+          "start_line": 43,
+          "end_line": 59
+        }
+      },
+      {
+        "content": "4.3\nBiomedical Question and Answer",
+        "html_tag": "h2",
+        "position": {
+          "xyxy": [
+            317.9549865722656,
+            586.7765502929688,
+            507.36968994140625,
+            597.6856689453125
+          ],
+          "start_line": 60,
+          "end_line": 61
+        }
+      },
+      {
+        "content": "The previous case studies focused on documents with smaller con-\ntent sizes. To explore the issues at a larger scale we created a RAG\nsystem using the BioASQ [ 10 ] dataset comprised of questions, links\nto document, and answers. The answers to questions were one of\nyes/no, text summarisation, factoid, or list. This dataset was pre-\npared by biomedical experts and contains domain specific question\nand answer pairs. We downloaded 4017 open access documents\nfrom the BioASQ dataset and had a total of 1000 questions. All\ndocuments were indexed and the questions asked against the RAG\nsystem. The generated questions were then evaluated using the",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            317.6860046386719,
+            601.5438842773438,
+            559.7149658203125,
+            709.1402587890625
+          ],
+          "start_line": 62,
+          "end_line": 71
+        }
+      },
+      {
+        "content": "CAIN 2024, April 2024, Lisbon, Portugal\nScott Barnett, Stefanus Kurniawan, Srikanth Thudumu, Zach Brannelly, Mohamed Abdelrazek",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            53.79800033569336,
+            62.163856506347656,
+            556.4556274414062,
+            69.13765716552734
+          ],
+          "start_line": 0,
+          "end_line": 1
+        }
+      },
+      {
+        "content": "Case Study\nDomain\nDoc Types\nDataset Size\nRAG Stages\nSample Questions",
+        "html_tag": "h2",
+        "position": {
+          "xyxy": [
+            75.83399963378906,
+            84.98136901855469,
+            483.27960205078125,
+            93.94776916503906
+          ],
+          "start_line": 2,
+          "end_line": 7
+        }
+      },
+      {
+        "content": "Cognitive\nReviewer*\nResearch\nPDFs\n(Any size)\nChunker, Rewriter, Re-\ntriever, Reader\nWhat are the key points covered in\nthis paper?",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            73.59200286865234,
+            95.93985748291016,
+            538.4119873046875,
+            115.86530303955078
+          ],
+          "start_line": 8,
+          "end_line": 16
+        }
+      },
+      {
+        "content": "AI Tutor*\nEducation\nVideos, HTML,\nPDF",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            73.27799987792969,
+            118.25687408447266,
+            248.53375244140625,
+            138.1822509765625
+          ],
+          "start_line": 17,
+          "end_line": 20
+        }
+      },
+      {
+        "content": "38\nChunker, Rewriter,\nRetriever, Reader",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            277.52801513671875,
+            118.25687408447266,
+            384.99591064453125,
+            138.1822509765625
+          ],
+          "start_line": 21,
+          "end_line": 23
+        }
+      },
+      {
+        "content": "What were the topics covered in\nweek 6?",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            410.4179992675781,
+            118.25687408447266,
+            538.4033203125,
+            138.1822509765625
+          ],
+          "start_line": 24,
+          "end_line": 25
+        }
+      },
+      {
+        "content": "BioASQ\nBiomedical\nScientific PDFs\n4017",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            73.59200286865234,
+            140.57284545898438,
+            290.0364990234375,
+            149.53924560546875
+          ],
+          "start_line": 26,
+          "end_line": 29
+        }
+      },
+      {
+        "content": "Chunker,\nRetriever,\nReader\nDefine pseudotumor cerebri. How\nis it treated?",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            315.84698486328125,
+            140.57284545898438,
+            538.7428588867188,
+            160.498291015625
+          ],
+          "start_line": 30,
+          "end_line": 34
+        }
+      },
+      {
+        "content": "Table 1: A summary of the RAG case studies presented in this paper. Case studies marked with a * are running systems currently\nin use.",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            53.50199890136719,
+            164.35145568847656,
+            558.451171875,
+            184.2088165283203
+          ],
+          "start_line": 35,
+          "end_line": 36
+        }
+      },
+      {
+        "content": "OpenEvals technique implemented by OpenAI 6 . From the gener-\nated questions we manually inspected 40 issues and all issues that\nthe OpenEvals flagged as inaccurate. We found that the automated\nevaluation was more pessimistic than a human rater for this domain.\nHowever, one threat to validity with this finding is that BioASQ is\na domain specific dataset and the reviewers were not experts i.e.\nthe large language model may know more than a non-expert.",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            53.79800033569336,
+            193.25184631347656,
+            295.5633850097656,
+            269.87127685546875
+          ],
+          "start_line": 37,
+          "end_line": 43
+        }
+      },
+      {
+        "content": "5\nFAILURE POINTS OF RAG SYSTEMS",
+        "html_tag": "h2",
+        "position": {
+          "xyxy": [
+            53.79800033569336,
+            281.5165710449219,
+            251.36180114746094,
+            292.4256591796875
+          ],
+          "start_line": 44,
+          "end_line": 45
+        }
+      },
+      {
+        "content": "From the case studies we identified a set of failure points presented\nbelow. The following section addresses the research question  What\nare the failure points that occur when engineering a RAG system?",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            53.79800033569336,
+            296.2848815917969,
+            294.0453796386719,
+            327.6310729980469
+          ],
+          "start_line": 46,
+          "end_line": 48
+        }
+      },
+      {
+        "content": "FP1 Missing Content  The first fail case is when asking a ques-\ntion that cannot be answered from the available documents.",
+        "html_tag": "h3",
+        "position": {
+          "xyxy": [
+            59.22100067138672,
+            331.57086181640625,
+            295.5632629394531,
+            351.4952697753906
+          ],
+          "start_line": 49,
+          "end_line": 50
+        }
+      },
+      {
+        "content": "In the happy case the RAG system will respond with some-\nthing like “Sorry, I don’t know\". However, for questions that\nare related to the content but don’t have answers the system\ncould be fooled into giving a response.",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            78.20700073242188,
+            353.4878845214844,
+            295.5577087402344,
+            395.3312683105469
+          ],
+          "start_line": 51,
+          "end_line": 54
+        }
+      },
+      {
+        "content": "FP2  Missed the Top Ranked Documents  The answer to the\nquestion is in the document but did not rank highly enough",
+        "html_tag": "h3",
+        "position": {
+          "xyxy": [
+            59.22100067138672,
+            397.3238830566406,
+            294.0443420410156,
+            417.249267578125
+          ],
+          "start_line": 55,
+          "end_line": 56
+        }
+      },
+      {
+        "content": "to be returned to the user. In theory, all documents are ranked\nand used in the next steps. However, in practice the top K\ndocuments are returned where K is a value selected based\non performance.",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            78.20700073242188,
+            419.24188232421875,
+            294.32958984375,
+            461.08526611328125
+          ],
+          "start_line": 57,
+          "end_line": 60
+        }
+      },
+      {
+        "content": "FP3  Not in Context - Consolidation strategy Limitations\nDocuments with the answer were retrieved from the data-",
+        "html_tag": "h3",
+        "position": {
+          "xyxy": [
+            59.22100067138672,
+            463.4079895019531,
+            295.5642395019531,
+            483.0022888183594
+          ],
+          "start_line": 61,
+          "end_line": 62
+        }
+      },
+      {
+        "content": "base but did not make it into the context for generating an\nanswer. This occurs when many documents are returned\nfrom the database and a consolidation process takes place to\nretrieve the answer.",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            78.20700073242188,
+            484.994873046875,
+            294.0492248535156,
+            526.8383178710938
+          ],
+          "start_line": 63,
+          "end_line": 66
+        }
+      },
+      {
+        "content": "FP4  Not Extracted  Here the answer is present in the context,\nbut the large language model failed to extract out the correct",
+        "html_tag": "h3",
+        "position": {
+          "xyxy": [
+            59.22100067138672,
+            528.8309326171875,
+            295.0291748046875,
+            548.7562866210938
+          ],
+          "start_line": 67,
+          "end_line": 68
+        }
+      },
+      {
+        "content": "answer. Typically, this occurs when there is too much noise\nor contradicting information in the context.",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            78.20700073242188,
+            550.7489013671875,
+            294.0448303222656,
+            570.6742553710938
+          ],
+          "start_line": 69,
+          "end_line": 70
+        }
+      },
+      {
+        "content": "FP5  Wrong Format  The question involved extracting informa-\ntion in a certain format such as a table or list and the large",
+        "html_tag": "h3",
+        "position": {
+          "xyxy": [
+            59.22100067138672,
+            572.6658935546875,
+            295.56024169921875,
+            592.5912475585938
+          ],
+          "start_line": 71,
+          "end_line": 72
+        }
+      },
+      {
+        "content": "language model ignored the instruction.\nFP6  Incorrect Specificity  The answer is returned in the re-",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            59.22100067138672,
+            594.5839233398438,
+            295.5599670410156,
+            614.9296264648438
+          ],
+          "start_line": 73,
+          "end_line": 74
+        }
+      },
+      {
+        "content": "sponse but is not specific enough or is too specific to address\nthe user’s need. This occurs when the RAG system designers\nhave a desired outcome for a given question such as teach-\ners for students. In this case, specific educational content\nshould be provided with answers not just the answer. Incor-\nrect specificity also occurs when users are not sure how to\nask a question and are too general.",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            78.20700073242188,
+            616.5018920898438,
+            295.5592956542969,
+            691.2212524414062
+          ],
+          "start_line": 75,
+          "end_line": 81
+        }
+      },
+      {
+        "content": "6 https://github.com/openai/evals",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            53.79800033569336,
+            700.3234252929688,
+            147.31509399414062,
+            708.7417602539062
+          ],
+          "start_line": 82,
+          "end_line": 82
+        }
+      },
+      {
+        "content": "FP7  Incomplete  Incomplete answers are not incorrect but miss\nsome of the information even though that information was in",
+        "html_tag": "h3",
+        "position": {
+          "xyxy": [
+            323.37799072265625,
+            195.15084838867188,
+            558.2008666992188,
+            215.0762939453125
+          ],
+          "start_line": 83,
+          "end_line": 84
+        }
+      },
+      {
+        "content": "the context and available for extraction. An example question\nsuch as “What are the key points covered in documents\nA, B and C?” A better approach is to ask these questions\nseparately.",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            342.04998779296875,
+            217.06887817382812,
+            558.2031860351562,
+            258.91229248046875
+          ],
+          "start_line": 85,
+          "end_line": 88
+        }
+      },
+      {
+        "content": "6\nLESSONS AND FUTURE RESEARCH",
+        "html_tag": "h2",
+        "position": {
+          "xyxy": [
+            317.95501708984375,
+            271.34759521484375,
+            516.1951904296875,
+            282.2566833496094
+          ],
+          "start_line": 89,
+          "end_line": 90
+        }
+      },
+      {
+        "content": "DIRECTIONS",
+        "html_tag": "h2",
+        "position": {
+          "xyxy": [
+            334.4720153808594,
+            284.2995910644531,
+            401.2902526855469,
+            295.20867919921875
+          ],
+          "start_line": 91,
+          "end_line": 91
+        }
+      },
+      {
+        "content": "The lessons learned from the three case studies are shown in Table 2.\nWe present our findings for the research question:  What are the\nkey considerations when engineering a RAG system?  Based on our",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            317.5249938964844,
+            299.0668640136719,
+            559.5855102539062,
+            330.43426513671875
+          ],
+          "start_line": 92,
+          "end_line": 94
+        }
+      },
+      {
+        "content": "takeaways we identified multiple potential research areas linked to\nRAG as follows:",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            317.9549865722656,
+            331.9438781738281,
+            558.2023315429688,
+            351.8692626953125
+          ],
+          "start_line": 95,
+          "end_line": 96
+        }
+      },
+      {
+        "content": "6.1\nChunking and Embeddings",
+        "html_tag": "h2",
+        "position": {
+          "xyxy": [
+            317.9549865722656,
+            364.3045654296875,
+            477.62054443359375,
+            375.2136535644531
+          ],
+          "start_line": 97,
+          "end_line": 98
+        }
+      },
+      {
+        "content": "Chunking documents sounds trivial. However, the quality of chunk-\ning affects the retrieval process in many ways and in particular\non the embeddings of the chunk then affects the similarity and\nmatching of chunks to user queries. There are two ways of chunk-\ning: heuristics based (using punctuation, end of paragraph, etc.),\nand semantic chunking (using the semantics in the text to inform\nstart-end of a chunk). Further research should explore the tradeoffs\nbetween these methods and their effects on critical downstream",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            317.9549865722656,
+            379.0728759765625,
+            559.7183227539062,
+            464.75128173828125
+          ],
+          "start_line": 99,
+          "end_line": 106
+        }
+      },
+      {
+        "content": "processes like embedding and similarity matching. A systematic\nevaluation framework comparing chunking techniques on metrics\nlike query relevance and retrieval accuracy would benefit the field.",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            317.9549865722656,
+            466.7438659667969,
+            559.5485229492188,
+            497.6282653808594
+          ],
+          "start_line": 107,
+          "end_line": 109
+        }
+      },
+      {
+        "content": "Embeddings represent another active research area, including\ngenerating embeddings for multimedia and multimodal chunks\nsuch as tables, figures, formulas, etc. Chunk embeddings are typ-\nically created once during system development or when a new\ndocument is indexed. Query preprocessing significantly impacts",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            317.9549865722656,
+            499.6208801269531,
+            559.7131958007812,
+            552.4232788085938
+          ],
+          "start_line": 110,
+          "end_line": 114
+        }
+      },
+      {
+        "content": "a RAG system’s performance, particularly handling negative or\nambiguous queries. Further research is needed on architectural pat-\nterns and approaches [ 5 ] to address the inherent limitations with",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            317.9549865722656,
+            554.4149169921875,
+            559.7137451171875,
+            585.2992553710938
+          ],
+          "start_line": 115,
+          "end_line": 117
+        }
+      },
+      {
+        "content": "embeddings (quality of a match is domain specific).",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            317.9549865722656,
+            587.2918701171875,
+            505.37982177734375,
+            596.2582397460938
+          ],
+          "start_line": 118,
+          "end_line": 118
+        }
+      },
+      {
+        "content": "6.2\nRAG vs Finetuning",
+        "html_tag": "h2",
+        "position": {
+          "xyxy": [
+            317.9549865722656,
+            608.693603515625,
+            436.70050048828125,
+            619.6027221679688
+          ],
+          "start_line": 119,
+          "end_line": 120
+        }
+      },
+      {
+        "content": "LLMs are great world models due to the amount of training data, and\nfinetuning tasks applied on the model before it’s released. However,\nthese models are general-purpose models (may not know the very\nspecifics of your domain) and also not up to date (there is a cutoff\ndate on their knowledge). Fine-tuning and RAG offer two potential\ncustomisation pathways, each with distinct tradeoffs. Finetuning",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            317.9549865722656,
+            623.4619140625,
+            559.1865234375,
+            687.2232666015625
+          ],
+          "start_line": 121,
+          "end_line": 126
+        }
+      },
+      {
+        "content": "requires curating internal datasets to adapt and train the LLM on.\nHowever, all your data are baked into the model and you need to",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            317.9549865722656,
+            689.2158813476562,
+            559.584716796875,
+            709.1402587890625
+          ],
+          "start_line": 127,
+          "end_line": 128
+        }
+      },
+      {
+        "content": "Seven Failure Points When Engineering a Retrieval Augmented Generation System\nCAIN 2024, April 2024, Lisbon, Portugal",
+        "html_tag": "h2",
+        "position": {
+          "xyxy": [
+            53.79800033569336,
+            62.163856506347656,
+            558.1990356445312,
+            69.13765716552734
+          ],
+          "start_line": 0,
+          "end_line": 1
+        }
+      },
+      {
+        "content": "FP\nLesson\nDescription\nCase Studie s",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            72.66000366210938,
+            84.5828628540039,
+            545.534912109375,
+            93.94776916503906
+          ],
+          "start_line": 2,
+          "end_line": 5
+        }
+      },
+      {
+        "content": "FP4\nLarger context get better results (Context refers to a\nparticular setting or situation in which the content\noccurs)",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            71.1709976196289,
+            95.93985748291016,
+            291.1502380371094,
+            126.82428741455078
+          ],
+          "start_line": 6,
+          "end_line": 9
+        }
+      },
+      {
+        "content": "A larger context enabled more accurate responses\n(8K vs 4K). Contrary to prior work with GPT-3.5 [ 13 ]",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            300.7950134277344,
+            95.93985748291016,
+            485.3612060546875,
+            115.86530303955078
+          ],
+          "start_line": 10,
+          "end_line": 11
+        }
+      },
+      {
+        "content": "AI Tutor",
+        "html_tag": "h3",
+        "position": {
+          "xyxy": [
+            495.0090026855469,
+            95.93985748291016,
+            526.5975952148438,
+            104.90625762939453
+          ],
+          "start_line": 12,
+          "end_line": 12
+        }
+      },
+      {
+        "content": "FP1\nSemantic caching drives cost and latency down\nRAG systems struggle with concurrent users due to\nrate limits and the cost of LLMs. Prepopulate the\nsemantic cache with frequently asked questions [ 1 ].\nAI Tutor\nFP5-7\nJailbreaks bypass the RAG system and hit the safety\ntraining.",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            67.57099914550781,
+            128.81686401367188,
+            526.5975952148438,
+            181.6192626953125
+          ],
+          "start_line": 13,
+          "end_line": 21
+        }
+      },
+      {
+        "content": "Research suggests fine-tuning LLMs reverses safety\ntraining [ 11 ], test all fine-tuned LLMs for RAG sys-\ntem.",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            301.1090087890625,
+            161.69387817382812,
+            486.8805847167969,
+            192.5782470703125
+          ],
+          "start_line": 22,
+          "end_line": 24
+        }
+      },
+      {
+        "content": "AI Tutor\nFP2, FP4",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            62.380001068115234,
+            161.69387817382812,
+            526.5975952148438,
+            203.5362548828125
+          ],
+          "start_line": 25,
+          "end_line": 26
+        }
+      },
+      {
+        "content": "Adding meta-data improves retrieval.\nAdding the file name and chunk number into the\nretrieved context helped the reader extract the re-\nquired information. Useful for chat dialogue.",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            106.58000183105469,
+            194.56985473632812,
+            486.8770446777344,
+            225.45428466796875
+          ],
+          "start_line": 27,
+          "end_line": 30
+        }
+      },
+      {
+        "content": "AI Tutor\nFP2, FP4-7",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            58.779998779296875,
+            194.56985473632812,
+            526.5975952148438,
+            236.41326904296875
+          ],
+          "start_line": 31,
+          "end_line": 32
+        }
+      },
+      {
+        "content": "Open source embedding models perform better for\nsmall text.",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            106.89399719238281,
+            227.44686889648438,
+            291.316162109375,
+            247.37225341796875
+          ],
+          "start_line": 33,
+          "end_line": 34
+        }
+      },
+      {
+        "content": "Opensource sentence embedding models performed\nas well as closed source alternatives on small text.",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            301.1090087890625,
+            227.44686889648438,
+            485.3653259277344,
+            247.37225341796875
+          ],
+          "start_line": 35,
+          "end_line": 36
+        }
+      },
+      {
+        "content": "BioASQ, AI Tutor\nFP2-7",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            67.57099914550781,
+            227.44686889648438,
+            559.6031494140625,
+            258.331298828125
+          ],
+          "start_line": 37,
+          "end_line": 38
+        }
+      },
+      {
+        "content": "RAG systems require continuous calibration.\nRAG systems receive unknown input at runtime\nrequiring constant monitoring.",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            106.89399719238281,
+            249.36489868164062,
+            485.3587646484375,
+            269.290283203125
+          ],
+          "start_line": 39,
+          "end_line": 41
+        }
+      },
+      {
+        "content": "AI Tutor, BioASQ\nFP1, FP2\nImplement a RAG pipeline for configuration.",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            62.380001068115234,
+            249.36489868164062,
+            559.02001953125,
+            280.249267578125
+          ],
+          "start_line": 42,
+          "end_line": 44
+        }
+      },
+      {
+        "content": "A RAG system requires calibrating chunk size,\nembedding strategy, chunking strategy, retrieval\nstrategy, consolidation strategy, context size, and\nprompts.",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            300.7950134277344,
+            271.2828674316406,
+            486.34356689453125,
+            313.1252746582031
+          ],
+          "start_line": 45,
+          "end_line": 48
+        }
+      },
+      {
+        "content": "Cognitive Reviewer,\nAI Tutor, BioASQ",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            495.0090026855469,
+            271.2828674316406,
+            567.1747436523438,
+            291.2082824707031
+          ],
+          "start_line": 49,
+          "end_line": 50
+        }
+      },
+      {
+        "content": "FP2, FP4\nRAG pipelines created by assembling bespoke solu-\ntions are suboptima.",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            62.380001068115234,
+            315.11785888671875,
+            292.6584167480469,
+            335.04327392578125
+          ],
+          "start_line": 51,
+          "end_line": 53
+        }
+      },
+      {
+        "content": "End-to-end training enhances domain adaptation\nin RAG systems [18].",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            301.1090087890625,
+            315.11785888671875,
+            485.3586730957031,
+            335.04327392578125
+          ],
+          "start_line": 54,
+          "end_line": 55
+        }
+      },
+      {
+        "content": "BioASQ, AI Tutor\nFP2-7",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            67.57099914550781,
+            315.11785888671875,
+            559.6031494140625,
+            346.0022888183594
+          ],
+          "start_line": 56,
+          "end_line": 57
+        }
+      },
+      {
+        "content": "Testing performance characteristics are only possi-\nble at runtime.\nOffline evaluation techniques such as G-Evals [ 14 ]\nlook promising but are premised on having access\nto labelled question and answer pairs.",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            106.625,
+            337.035888671875,
+            485.3646240234375,
+            367.9202880859375
+          ],
+          "start_line": 58,
+          "end_line": 62
+        }
+      },
+      {
+        "content": "Cognitive Reviewer,\nAI Tutor",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            495.0090026855469,
+            337.035888671875,
+            567.1747436523438,
+            356.9612731933594
+          ],
+          "start_line": 63,
+          "end_line": 64
+        }
+      },
+      {
+        "content": "Table 2: The lessons learned from the three case studies with key takeaways for future RAG implementations\nsort out the security/privacy (who can access what). Furthermore,\nas the foundation model itself evolves or you get new data to add to",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            53.79800033569336,
+            371.70635986328125,
+            527.6369018554688,
+            411.540283203125
+          ],
+          "start_line": 65,
+          "end_line": 67
+        }
+      },
+      {
+        "content": "the model, you will need to run finetuning again. On the other side,\nRAG systems seem to offer a pragmatic solution allowing you to\nchunk your data as needed and only use relevant chunks into the",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            53.79800033569336,
+            413.5318603515625,
+            295.0295104980469,
+            444.416259765625
+          ],
+          "start_line": 68,
+          "end_line": 70
+        }
+      },
+      {
+        "content": "context to ask the LLM to generate an answer from the included\ncontext. This facilitates continuously updating the knowledge with\nnew documents and also gives the control over what chunks the user\nis able to access. However, optimal strategies for chunk embedding,",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            53.79800033569336,
+            446.40887451171875,
+            295.02947998046875,
+            488.2522888183594
+          ],
+          "start_line": 71,
+          "end_line": 74
+        }
+      },
+      {
+        "content": "retrieval, and contextual fusion remain active research. Further\nwork should systematically compare finetuning and RAG paradigms\nacross factors including accuracy, latency, operating costs, and\nrobustness.",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            53.46699905395508,
+            490.244873046875,
+            294.2117004394531,
+            532.0872802734375
+          ],
+          "start_line": 75,
+          "end_line": 78
+        }
+      },
+      {
+        "content": "6.3\nTesting and Monitoring RAG systems",
+        "html_tag": "h2",
+        "position": {
+          "xyxy": [
+            53.79800033569336,
+            564.8585815429688,
+            263.31817626953125,
+            575.7677001953125
+          ],
+          "start_line": 79,
+          "end_line": 80
+        }
+      },
+      {
+        "content": "Software engineering best practices are still emerging for RAG sys-\ntems. Software testing and test case generation are one of the areas\nfor refinement. RAG systems require questions and answers that are\napplication specific often unavailable when indexing unstructured",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            53.79800033569336,
+            579.6268920898438,
+            295.55712890625,
+            621.4692993164062
+          ],
+          "start_line": 81,
+          "end_line": 84
+        }
+      },
+      {
+        "content": "documents. Emerging work has considered using LLMs for gen-\nerating questions from multiple documents [ 4 ]. How to generate\nrealistic domain relevant questions and answers remains an open\nproblem.",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            53.79800033569336,
+            623.4619140625,
+            295.55615234375,
+            665.3052368164062
+          ],
+          "start_line": 85,
+          "end_line": 88
+        }
+      },
+      {
+        "content": "Once suitable test data is available quality metrics are also re-\nquired to assist engineers in making quality tradeoffs. Using large\nlanguage models is expensive, introduces latency concerns, and has\nperformance characteristics that all change with each new release.",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            53.79800033569336,
+            667.2979125976562,
+            295.5594177246094,
+            709.1402587890625
+          ],
+          "start_line": 89,
+          "end_line": 92
+        }
+      },
+      {
+        "content": "This characteristic has previously been studied for machine learn-\ning systems [ 5 ,  6 ] but the required adaptations (if any) have yet to\nbe applied to LLM based systems such as RAGs. Another idea is to\nincorporate ideas from self-adaptive systems to support monitoring",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            317.6860046386719,
+            391.6148681640625,
+            559.715576171875,
+            433.457275390625
+          ],
+          "start_line": 93,
+          "end_line": 96
+        }
+      },
+      {
+        "content": "and adapting RAG systems, preliminary work has started for other\nmachine learning applications [2].",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            317.9549865722656,
+            435.4498596191406,
+            558.3736572265625,
+            455.3752746582031
+          ],
+          "start_line": 97,
+          "end_line": 98
+        }
+      },
+      {
+        "content": "7\nCONCLUSION",
+        "html_tag": "h2",
+        "position": {
+          "xyxy": [
+            317.9549865722656,
+            476.3315734863281,
+            405.7295837402344,
+            487.24066162109375
+          ],
+          "start_line": 99,
+          "end_line": 100
+        }
+      },
+      {
+        "content": "RAG systems are a new information retrieval that leverages LLMs.\nSoftware engineers increasingly interact with RAG systems a)\nthrough implementing semantic search, or b) through new code-\ndependent tasks. This paper presented the lessons learned from 3\ncase studies including an empirical investigation involving 15,000\ndocuments and 1000 questions. Our findings provide a guide to\npractitioners by presenting the challenges faced when implement-\ning RAG systems. We also included future research directions for\nRAG systems related to 1) chunking and embeddings, 2) RAG vs\nFinetuning, and 3) Testing and Monitoring. Large language models\nare going to continue to obtain new capabilities of interest to engi-\nneers and researchers. This paper presents the first investigation",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            317.9549865722656,
+            491.0998840332031,
+            559.7150268554688,
+            620.6142578125
+          ],
+          "start_line": 101,
+          "end_line": 112
+        }
+      },
+      {
+        "content": "into RAG systems from a software engineering perspective.\nACKNOWLEDGMENTS",
+        "html_tag": "h2",
+        "position": {
+          "xyxy": [
+            317.9549865722656,
+            622.60693359375,
+            535.6415405273438,
+            663.4386596679688
+          ],
+          "start_line": 113,
+          "end_line": 114
+        }
+      },
+      {
+        "content": "To Amanda Edgar, Rajesh Vasa, Kon Mouzakis, Matteo Vergani,\nTrish McCluskey, Kathryn Perus, Tara Draper, Joan Sutherland and\nRuary Ross for their support and involvement in making the AI\nTutor project possible.",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            317.6860046386719,
+            667.2979125976562,
+            559.1881103515625,
+            709.1402587890625
+          ],
+          "start_line": 115,
+          "end_line": 118
+        }
+      },
+      {
+        "content": "CAIN 2024, April 2024, Lisbon, Portugal\nScott Barnett, Stefanus Kurniawan, Srikanth Thudumu, Zach Brannelly, Mohamed Abdelrazek",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            53.79800033569336,
+            62.163856506347656,
+            556.4556274414062,
+            69.13765716552734
+          ],
+          "start_line": 0,
+          "end_line": 1
+        }
+      },
+      {
+        "content": "REFERENCES",
+        "html_tag": "h2",
+        "position": {
+          "xyxy": [
+            53.79800033569336,
+            85.40655517578125,
+            123.21258544921875,
+            96.31565856933594
+          ],
+          "start_line": 2,
+          "end_line": 2
+        }
+      },
+      {
+        "content": "[1]  Fu Bang. 2023. GPTCache: An Open-Source Semantic Cache for LLM Applications\nEnabling Faster Answers and Cost Savings. In  3rd Workshop for Natural Language\nProcessing Open Source Software .",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            57.04100036621094,
+            98.77996826171875,
+            294.0460510253906,
+            122.0537109375
+          ],
+          "start_line": 3,
+          "end_line": 5
+        }
+      },
+      {
+        "content": "[2]  Maria Casimiro, Paolo Romano, David Garlan, Gabriel Moreno, Eunsuk Kang, and",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            57.04100036621094,
+            122.68994140625,
+            294.04229736328125,
+            129.6637420654297
+          ],
+          "start_line": 6,
+          "end_line": 6
+        }
+      },
+      {
+        "content": "Mark Klein. 2022.  Self-adaptive Machine Learning Systems: Research Challenges\nand Opportunities . 133–155. https://doi.org/10.1007/978-3-031-15116-3_7",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            69.23400115966797,
+            130.65997314453125,
+            294.04345703125,
+            145.96368408203125
+          ],
+          "start_line": 7,
+          "end_line": 8
+        }
+      },
+      {
+        "content": "[3]  Jiawei Chen, Hongyu Lin, Xianpei Han, and Le Sun. 2023.\nBenchmarking",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            57.0410041809082,
+            146.59991455078125,
+            294.0420227050781,
+            153.5737762451172
+          ],
+          "start_line": 9,
+          "end_line": 10
+        }
+      },
+      {
+        "content": "Large Language Models in Retrieval-Augmented Generation.  arXiv preprint\narXiv:2309.01431  (2023).",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            69.23400115966797,
+            154.5699462890625,
+            294.0447692871094,
+            169.87469482421875
+          ],
+          "start_line": 11,
+          "end_line": 12
+        }
+      },
+      {
+        "content": "[4]  Mingda Chen, Xilun Chen, and Wen-tau Yih. 2023. Efficient Open Domain\nMulti-Hop Question Answering with Few-Shot Data Synthesis.  arXiv preprint",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            57.04100036621094,
+            170.51092529296875,
+            294.0470275878906,
+            185.8278045654297
+          ],
+          "start_line": 13,
+          "end_line": 14
+        }
+      },
+      {
+        "content": "arXiv:2305.13691  (2023).",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            69.23400115966797,
+            186.45098876953125,
+            136.03689575195312,
+            193.78472900390625
+          ],
+          "start_line": 15,
+          "end_line": 15
+        }
+      },
+      {
+        "content": "[5]  Alex Cummaudo, Scott Barnett, Rajesh Vasa, and John Grundy. 2020. Threshy:\nSupporting safe usage of intelligent web services. In  Proceedings of the 28th ACM",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            57.04100036621094,
+            194.42095947265625,
+            294.8689270019531,
+            209.70703125
+          ],
+          "start_line": 16,
+          "end_line": 17
+        }
+      },
+      {
+        "content": "Joint Meeting on European Software Engineering Conference and Symposium on\nthe Foundations of Software Engineering . 1645–1649.",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            69.23400115966797,
+            210.67672729492188,
+            294.0475769042969,
+            225.6646728515625
+          ],
+          "start_line": 18,
+          "end_line": 19
+        }
+      },
+      {
+        "content": "[6]  Alex Cummaudo, Scott Barnett, Rajesh Vasa, John Grundy, and Mohamed Ab-\ndelrazek. 2020. Beware the evolving ‘intelligent’web service! An integration",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            57.04100799560547,
+            226.3009033203125,
+            295.2228088378906,
+            241.2457733154297
+          ],
+          "start_line": 20,
+          "end_line": 21
+        }
+      },
+      {
+        "content": "architecture tactic to guard AI-first components. In  Proceedings of the 28th ACM\nJoint Meeting on European Software Engineering Conference and Symposium on",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            69.23400115966797,
+            242.241943359375,
+            294.0475769042969,
+            257.5605773925781
+          ],
+          "start_line": 22,
+          "end_line": 23
+        }
+      },
+      {
+        "content": "the Foundations of Software Engineering . 269–280.",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            69.23400115966797,
+            258.18194580078125,
+            208.94046020507812,
+            265.51568603515625
+          ],
+          "start_line": 24,
+          "end_line": 24
+        }
+      },
+      {
+        "content": "[7]  Kelvin Guu, Kenton Lee, Zora Tung, Panupong Pasupat, and Mingwei Chang. 2020.\nRetrieval augmented language model pre-training. In  International conference on",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            57.04100799560547,
+            266.15191650390625,
+            295.11529541015625,
+            281.443359375
+          ],
+          "start_line": 25,
+          "end_line": 26
+        }
+      },
+      {
+        "content": "machine learning . PMLR, 3929–3938.",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            69.23400115966797,
+            282.0919494628906,
+            172.75338745117188,
+            289.4256896972656
+          ],
+          "start_line": 27,
+          "end_line": 27
+        }
+      },
+      {
+        "content": "[8]  Sebastian Hofstätter, Jiecao Chen, Karthik Raman, and Hamed Zamani. 2023. Fid-\nlight: Efficient and effective retrieval-augmented text generation. In  Proceedings",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            57.04100036621094,
+            290.06195068359375,
+            295.224609375,
+            305.3612976074219
+          ],
+          "start_line": 28,
+          "end_line": 29
+        }
+      },
+      {
+        "content": "of the 46th International ACM SIGIR Conference on Research and Development in\nInformation Retrieval . 1437–1447.",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            69.23400115966797,
+            306.349853515625,
+            294.0441589355469,
+            321.30670166015625
+          ],
+          "start_line": 30,
+          "end_line": 31
+        }
+      },
+      {
+        "content": "[9]  Gautier Izacard and Edouard Grave. 2020. Leveraging passage retrieval with\ngenerative models for open domain question answering.",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            57.04100036621094,
+            321.9429626464844,
+            294.04205322265625,
+            336.8867492675781
+          ],
+          "start_line": 32,
+          "end_line": 33
+        }
+      },
+      {
+        "content": "arXiv preprint\narXiv:2007.01282  (2020).",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            252.06399536132812,
+            88.0699462890625,
+            400.48291015625,
+            337.26416015625
+          ],
+          "start_line": 34,
+          "end_line": 35
+        }
+      },
+      {
+        "content": "[10]  Anastasia Krithara, Anastasios Nentidis, Konstantinos Bougiatiotis, and Georgios\nPaliouras. 2023. BioASQ-QA: A manually curated corpus for biomedical question",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            317.9549865722656,
+            96.0399169921875,
+            558.1993408203125,
+            110.98374938964844
+          ],
+          "start_line": 36,
+          "end_line": 37
+        }
+      },
+      {
+        "content": "answering.  Scientific Data  10 (2023), 170. Citation Key: 422.",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            333.3909912109375,
+            111.97998046875,
+            502.87200927734375,
+            119.313720703125
+          ],
+          "start_line": 38,
+          "end_line": 38
+        }
+      },
+      {
+        "content": "[11]  Simon Lermen, Charlie Rogers-Smith, and Jeffrey Ladish. 2023. LoRA Fine-tuning\nEfficiently Undoes Safety Training in Llama 2-Chat 70B. arXiv:2310.20624 [cs.LG]",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            317.9549865722656,
+            119.949951171875,
+            558.1992797851562,
+            134.89378356933594
+          ],
+          "start_line": 39,
+          "end_line": 40
+        }
+      },
+      {
+        "content": "[12]  Patrick Lewis, Ethan Perez, Aleksandra Piktus, Fabio Petroni, Vladimir Karpukhin,\nNaman Goyal, Heinrich Küttler, Mike Lewis, Wen-tau Yih, Tim Rocktäschel,\net al .  2020. Retrieval-augmented generation for knowledge-intensive nlp tasks.",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            317.9549865722656,
+            135.89093017578125,
+            559.2737426757812,
+            158.8047332763672
+          ],
+          "start_line": 41,
+          "end_line": 43
+        }
+      },
+      {
+        "content": "Advances in Neural Information Processing Systems  33 (2020), 9459–9474.",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            333.3909912109375,
+            159.80096435546875,
+            537.915771484375,
+            167.13470458984375
+          ],
+          "start_line": 44,
+          "end_line": 44
+        }
+      },
+      {
+        "content": "[13]  Nelson F Liu, Kevin Lin, John Hewitt, Ashwin Paranjape, Michele Bevilacqua,\nFabio Petroni, and Percy Liang. 2023. Lost in the middle: How language models",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            317.9549560546875,
+            167.77093505859375,
+            558.9673461914062,
+            182.7147674560547
+          ],
+          "start_line": 45,
+          "end_line": 46
+        }
+      },
+      {
+        "content": "use long contexts.  arXiv preprint arXiv:2307.03172  (2023).",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            333.3909912109375,
+            183.7109375,
+            495.24993896484375,
+            191.044677734375
+          ],
+          "start_line": 47,
+          "end_line": 47
+        }
+      },
+      {
+        "content": "[14]  Yang Liu, Dan Iter, Yichong Xu, Shuohang Wang, Ruochen Xu, and Chenguang\nZhu. 2023. G-eval: Nlg evaluation using gpt-4 with better human alignment, may",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            317.95501708984375,
+            191.680908203125,
+            558.3838500976562,
+            206.62474060058594
+          ],
+          "start_line": 48,
+          "end_line": 49
+        }
+      },
+      {
+        "content": "2023.  arXiv preprint arXiv:2303.16634  (2023).\n[15]  Noor Nashid, Mifta Sintaha, and Ali Mesbah. 2023. Retrieval-based prompt selec-",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            317.9549865722656,
+            207.6219482421875,
+            559.3814697265625,
+            222.56578063964844
+          ],
+          "start_line": 50,
+          "end_line": 51
+        }
+      },
+      {
+        "content": "tion for code-related few-shot learning. In  Proceedings of the 45th International\nConference on Software Engineering (ICSE’23) .",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            333.3909912109375,
+            223.56195068359375,
+            558.1992797851562,
+            238.86572265625
+          ],
+          "start_line": 52,
+          "end_line": 53
+        }
+      },
+      {
+        "content": "[16]  OpenAI. 2023. GPT-4 Technical Report. https://doi.org/10.48550/ARXIV.2303.\n08774",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            317.9549865722656,
+            239.501953125,
+            559.2757568359375,
+            254.44578552246094
+          ],
+          "start_line": 54,
+          "end_line": 55
+        }
+      },
+      {
+        "content": "[17]  Alec Radford, Jong Wook Kim, Tao Xu, Greg Brockman, Christine McLeavey, and\nIlya Sutskever. 2023. Robust speech recognition via large-scale weak supervision.",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            317.9549865722656,
+            255.44195556640625,
+            559.2720336914062,
+            270.3857727050781
+          ],
+          "start_line": 56,
+          "end_line": 57
+        }
+      },
+      {
+        "content": "In  International Conference on Machine Learning . PMLR, 28492–28518.\n[18]  Shamane Siriwardhana, Rivindu Weerasekera, Elliott Wen, Tharindu Kalu-",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            317.9549865722656,
+            271.3819580078125,
+            559.3798828125,
+            286.3267517089844
+          ],
+          "start_line": 58,
+          "end_line": 59
+        }
+      },
+      {
+        "content": "arachchi, Rajib Rana, and Suranga Nanayakkara. 2023. Improving the domain\nadaptation of retrieval augmented generation (RAG) models for open domain",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            333.3909912109375,
+            287.3229675292969,
+            558.1990966796875,
+            302.2667541503906
+          ],
+          "start_line": 60,
+          "end_line": 61
+        }
+      },
+      {
+        "content": "question answering.  Transactions of the Association for Computational Linguistics\n11 (2023), 1–17.",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            333.2309875488281,
+            303.2629699707031,
+            558.2021484375,
+            318.2067565917969
+          ],
+          "start_line": 62,
+          "end_line": 63
+        }
+      },
+      {
+        "content": "[19]  Yutao Zhu, Huaying Yuan, Shuting Wang, Jiongnan Liu, Wenhan Liu, Chen-\nlong Deng, Zhicheng Dou, and Ji-Rong Wen. 2023. Large language models for",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            317.9549865722656,
+            319.2029724121094,
+            559.3799438476562,
+            334.1467590332031
+          ],
+          "start_line": 64,
+          "end_line": 65
+        }
+      },
+      {
+        "content": "information retrieval: A survey.  arXiv preprint arXiv:2308.07107  (2023).",
+        "html_tag": "p",
+        "position": {
+          "xyxy": [
+            333.3909912109375,
+            335.1429443359375,
+            534.5338134765625,
+            342.4766845703125
+          ],
+          "start_line": 66,
+          "end_line": 66
+        }
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 26679,
+      "completion_tokens": 4273,
+      "total_tokens": 30952
+    }
+  }
+}

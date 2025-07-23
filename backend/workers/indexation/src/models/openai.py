@@ -1,6 +1,6 @@
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class ChatMessage(BaseModel):
@@ -22,7 +22,7 @@ class Usage(BaseModel):
 
 
 class ChatCompletionResponse(BaseModel):
-    index: str
+    index: str = Field(alias="id")
     object: str
     created: int
     model: str

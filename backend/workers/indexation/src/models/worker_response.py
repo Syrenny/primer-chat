@@ -2,7 +2,7 @@ from typing import Annotated, Literal, Union
 
 from pydantic import BaseModel, Field
 
-from .chunks import Chunks
+from .indexation import IndexationResult
 
 
 class ResponseError(BaseModel):
@@ -12,7 +12,7 @@ class ResponseError(BaseModel):
 
 class ResponseDefault(BaseModel):
     type: Literal["default"]
-    chunks: Chunks
+    result: IndexationResult
 
 
 WorkerResponse = Annotated[

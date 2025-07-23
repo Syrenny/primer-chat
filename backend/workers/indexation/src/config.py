@@ -24,6 +24,8 @@ class Config(BaseModel):
     openai_base_url: str
     openai_temperature: float
     openai_max_tokens: int
+    openai_throttle_rate_limit: int
+    openai_throttle_period: float
 
     embeddings_model: str
     embeddings_base_url: str

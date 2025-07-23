@@ -1,52 +1,42 @@
-from collections import Counter
+import asyncio
+import json
+import sys
 from pathlib import Path
 
-import fitz  # PyMuPDF
+from loguru import logger
+from src.models.worker_response import WorkerResponse, ResponseError, ResponseDefault
+from src.services.indexation import IndexationService
 
 
-# Ключ, по которому будем группировать стили
-def style_key(span: dict) -> tuple:
-    font = span["font"]
-    size = round(span["size"], 2)  # округляем для устойчивости
-    flags = span.get("flags", 0)  # жирность, наклон и т.п.
-    return (font, size, flags)
+async def run_indexation(pdf_bytes: bytes) -> WorkerResponse:
+    try:
+        service = IndexationService()
+        result = await service.run(pdf_bytes)
+        return ResponseDefault(type="default", result=result)
+    except Exception as err:
+        logger.exception("Ошибка во время индексации")
+        return ResponseError(type="error", message=str(err))
 
 
-def extract_unique_styles(pdf_path: str) -> Counter:
-    doc = fitz.open(pdf_path)
-    styles = Counter()
+def main():
+    if len(sys.argv) != 2:
+        print("Usage: python test_indexation.py <path_to_pdf>")
+        sys.exit(1)
 
-    for page_num, page in enumerate(doc):
-        text = page.get_text("dict")
-        for block in text.get("blocks", []):
-            if block.get("type") != 0:
-                continue  # пропускаем изображения и прочее
+    pdf_path = Path(sys.argv[1])
+    if not pdf_path.exists():
+        print(f"Файл не найден: {pdf_path}")
+        sys.exit(1)
 
-            for line in block.get("lines", []):
-                for span in line.get("spans", []):
-                    key = style_key(span)
-                    styles[key] += 1
+    pdf_bytes = pdf_path.read_bytes()
+    response = asyncio.run(run_indexation(pdf_bytes))
 
-    return styles
-
-
-def pretty_print(styles: Counter):
-    print(f"Найдено {len(styles)} уникальных стилей:\n")
-    for (font, size, flags), count in styles.most_common():
-        print(f"{font:30s} | size: {size:>5} | flags: {flags} | count: {count}")
+    output_path = Path("output.json")
+    output_path.write_text(
+        json.dumps(response.model_dump(mode="json"), indent=2, ensure_ascii=False)
+    )
+    print(f"Индексация завершена. Результат сохранён в {output_path.absolute()}")
 
 
 if __name__ == "__main__":
-    import sys
-
-    if len(sys.argv) < 2:
-        print("Usage: python extract_styles.py <your_file.pdf>")
-        sys.exit(1)
-
-    pdf_file = sys.argv[1]
-    if not Path(pdf_file).exists():
-        print("Файл не найден:", pdf_file)
-        sys.exit(1)
-
-    styles = extract_unique_styles(pdf_file)
-    pretty_print(styles)
+    main()

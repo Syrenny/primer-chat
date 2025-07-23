@@ -6,6 +6,6 @@ celery_app = Celery(
     backend="redis://localhost:6379/1",
 )
 
-celery_app.conf.task_serializer = "pickle"
-celery_app.conf.result_serializer = "pickle"
-celery_app.conf.accept_content = ["pickle"]
+celery_app.conf.task_serializer = "json"
+celery_app.conf.result_serializer = "json"
+celery_app.conf.accept_content = ["json"]
