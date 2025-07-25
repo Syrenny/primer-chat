@@ -9,3 +9,7 @@ uvicorn:
     port: 8000
     workers: 1
     reload: true
+
+generation:
+    wait_for_stream_timeout: 5
+    max_len_history: 10

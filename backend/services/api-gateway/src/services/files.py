@@ -5,6 +5,7 @@ from uuid import UUID
 from fastapi import UploadFile
 from shared_adapters.s3 import S3Storage
 from shared_models.indexation.interface import IndexationWorkerRequest
+from shared_models.worker.context import WorkerRequestContext
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.config import config
 from src.consumers.indexation.request import IndexationProducer
@@ -64,7 +65,7 @@ class FileProcessor:
         content = await cls._read_file(upload_file)
         db_meta = await cls._store_metadata(session, user_id, upload_file.filename)
         s3_link = await cls._upload_to_storage(user_id, db_meta.file_id, content)
-        await cls._enqueue_indexation(s3_link)
+        await cls._enqueue_indexation(s3_link, user_id=user_id, file_id=db_meta.file_id)
 
         return FileMeta(
             file_id=db_meta.file_id,
@@ -97,8 +98,9 @@ class FileProcessor:
         )
 
     @staticmethod
-    async def _enqueue_indexation(s3_link: str):
-        request = IndexationWorkerRequest(s3_link=s3_link)
+    async def _enqueue_indexation(s3_link: str, user_id: UUID, file_id: UUID):
+        context = WorkerRequestContext(user_id=user_id, file_id=file_id)
+        request = IndexationWorkerRequest(s3_link=s3_link, context=context)
         async with IndexationProducer() as producer:
             await producer.send(request)
 
@@ -132,4 +134,9 @@ class FileService:
         )
 
     @classmethod
-    async def get_signed_url(cls, )
+    async def set_is_indexed(
+        cls, file_id: UUID, session: AsyncSession, user_id: UUID, value: bool
+    ) -> None:
+        await DaoFileMeta.set_is_indexed(
+            session=session, user_id=user_id, file_id=file_id, value=value
+        )

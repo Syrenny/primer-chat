@@ -59,6 +59,13 @@ class S3Config(BaseModel):
     presign_expire_seconds: int
 
 
+class RedisConfig(BaseModel):
+    host: str
+    port: int
+    db: 0
+    stream_key: str
+
+
 class OpenAIConfig(BaseModel):
     model: str
     base_url: str

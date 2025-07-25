@@ -34,7 +34,9 @@ async def consume_indexation():
         async for msg in consumer:
             request = IndexationWorkerRequest.model_validate(msg.value)
 
-            worker_response = IndexationWorkerResponse(request_id=request.request_id)
+            worker_response = IndexationWorkerResponse(
+                request_id=request.request_id, context=request.context
+            )
 
             try:
                 pdf_bytes = await S3Storage.get_pdf_bytes_from_url(request.s3_link)

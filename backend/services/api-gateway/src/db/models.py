@@ -3,71 +3,106 @@ from datetime import UTC, datetime
 
 import sqlalchemy as db
 from pgvector.sqlalchemy import Vector
-from sqlalchemy.dialects.postgresql import UUID
+from shared_config import config, timezone
+from shared_models.user.persona import UserPersona
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
 from sqlalchemy.orm import DeclarativeBase, relationship
-
-from server.models import Action
 
 
 class Base(DeclarativeBase):
-    pass
+    __abstract__ = True
+
+
+history_file_association = db.Table(
+    "history_file_association",
+    Base.metadata,
+    db.Column(
+        "history_id",
+        UUID(as_uuid=True),
+        db.ForeignKey("history_meta.id"),
+        primary_key=True,
+    ),
+    db.Column(
+        "file_id",
+        UUID(as_uuid=True),
+        db.ForeignKey("file_meta.file_id"),
+        primary_key=True,
+    ),
+)
 
 
 class DBUser(Base):
     __tablename__ = "users"
 
     id: uuid.UUID = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    email: str = db.Column(db.String, unique=True, nullable=False)
-    password: str = db.Column(db.String, nullable=False)
+    persona = db.Column(
+        JSONB, nullable=False, default=lambda: UserPersona().model_dump()
+    )
 
-    token = relationship("DBToken", back_populates="user", uselist=False)
-    chunks = relationship(
-        "DBChunk", back_populates="user", cascade="all, delete-orphan"
+    token = relationship(
+        "DBToken", back_populates="user", uselist=False, lazy="selectin"
     )
     files_meta = relationship(
-        "DBFileMeta", back_populates="user", cascade="all, delete-orphan"
+        "DBFileMeta",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
+    histories = relationship(
+        "DBHistoryMeta",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
+
+    chunks = relationship(
+        "DBChunk", back_populates="user", cascade="all, delete-orphan", lazy="selectin"
     )
     messages = relationship(
-        "DBMessage", back_populates="user", cascade="all, delete-orphan"
+        "DBMessage",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        lazy="selectin",
     )
 
 
 class DBToken(Base):
     __tablename__ = "tokens"
 
-    id: uuid.UUID = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id: uuid.UUID = db.Column(
-        UUID(as_uuid=True), db.ForeignKey("users.id"), nullable=False
-    )
-    token: str = db.Column(db.String, nullable=False, unique=True)
-    created_at: datetime = db.Column(
-        db.DateTime,
-        nullable=False,
-        default=datetime.now(UTC).replace(tzinfo=None),
+    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = db.Column(UUID(as_uuid=True), db.ForeignKey("users.id"), nullable=False)
+    token = db.Column(db.String, nullable=False, unique=True)
+    created_at = db.Column(
+        db.DateTime, nullable=False, default=datetime.now(UTC).replace(tzinfo=timezone)
     )
 
-    user = relationship("DBUser", back_populates="token")
+    user = relationship("DBUser", back_populates="token", lazy="selectin")
 
 
 class DBFileMeta(Base):
     __tablename__ = "file_meta"
 
-    id: uuid.UUID = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    file_id: uuid.UUID = db.Column(
+    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    file_id = db.Column(
         UUID(as_uuid=True), unique=True, nullable=False, default=uuid.uuid4
     )
-    user_id: uuid.UUID = db.Column(
-        UUID(as_uuid=True), db.ForeignKey("users.id"), nullable=False
-    )
-    filename: str = db.Column(db.String, nullable=False)
-    is_indexed: bool = db.Column(db.Boolean, nullable=False, default=False)
+    filename = db.Column(db.String, nullable=False)
+    is_indexed = db.Column(db.Boolean, default=False, nullable=False)
 
-    user = relationship("DBUser", back_populates="files_meta")
+    user_id = db.Column(UUID(as_uuid=True), db.ForeignKey("users.id"), nullable=False)
+
+    user = relationship("DBUser", back_populates="files_meta", lazy="selectin")
     chunks = relationship(
-        "DBChunk", back_populates="file_meta", cascade="all, delete-orphan"
+        "DBChunk",
+        back_populates="file_meta",
+        cascade="all, delete-orphan",
+        lazy="selectin",
     )
-    messages = relationship(
-        "DBMessage", back_populates="file_meta", cascade="all, delete-orphan"
+    histories = relationship(
+        "DBHistoryMeta",
+        secondary=history_file_association,
+        back_populates="files",
+        lazy="selectin",
     )
 
 
@@ -88,23 +123,21 @@ class DBMessage(Base):
     __tablename__ = "messages"
 
     id: uuid.UUID = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    file_id: uuid.UUID = db.Column(
-        UUID(as_uuid=True), db.ForeignKey("file_meta.file_id"), nullable=False
+    is_user_message: bool = db.Column(db.Boolean, nullable=False)
+    content: str = db.Column(db.Text, nullable=False)
+
+    history_id = db.Column(
+        UUID(as_uuid=True), db.ForeignKey("history_meta.id"), nullable=False
     )
     user_id: uuid.UUID = db.Column(
         UUID(as_uuid=True), db.ForeignKey("users.id"), nullable=False
     )
-    content: str = db.Column(db.Text, nullable=False)
-    action: Action = db.Column(
-        db.Enum(Action, name="action_type"), nullable=False, default=None
-    )
-    snippet: str = db.Column(db.Text, nullable=True, default=None)
+
     timestamp: datetime = db.Column(
         db.DateTime,
         nullable=False,
-        default=datetime.now(UTC).replace(tzinfo=None),
+        default=datetime.now(UTC).replace(tzinfo=timezone),
     )
-    is_user_message: bool = db.Column(db.Boolean, nullable=False)
 
     context = relationship(
         "DBChunk",
@@ -113,7 +146,8 @@ class DBMessage(Base):
         cascade="all, delete",
     )
 
-    file_meta = relationship("DBFileMeta", back_populates="messages")
+    history = relationship("DBHistoryMeta", back_populates="messages", lazy="selectin")
+
     user = relationship("DBUser", back_populates="messages")
 
 
@@ -121,20 +155,24 @@ class DBChunk(Base):
     __tablename__ = "chunks"
 
     id: uuid.UUID = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    content: str = db.Column(db.Text, nullable=False)
+    embedding = db.Column(Vector(config.embeddings.dimensions))
+    html_tag = db.Column(db.String, nullable=False)
+    xyxy = db.Column(ARRAY(db.Float), nullable=False)
+    start_line = db.Column(db.Integer, nullable=False)
+    end_line = db.Column(db.Integer, nullable=False)
+
     user_id: uuid.UUID = db.Column(
         UUID(as_uuid=True), db.ForeignKey("users.id"), nullable=False
     )
-    filename: str = db.Column(db.String, nullable=False)
     file_id: uuid.UUID = db.Column(
         UUID(as_uuid=True), db.ForeignKey("file_meta.file_id"), nullable=False
     )
-    chunk_text: str = db.Column(db.Text, nullable=False)
     created_at: datetime = db.Column(
         db.DateTime,
         nullable=False,
-        default=datetime.now(UTC).replace(tzinfo=None),
+        default=datetime.now(UTC).replace(tzinfo=timezone),
     )
-    embedding = db.Column(Vector(1024))
 
     messages = relationship(
         "DBMessage",
@@ -144,3 +182,28 @@ class DBChunk(Base):
     )
     file_meta = relationship("DBFileMeta", back_populates="chunks")
     user = relationship("DBUser", back_populates="chunks")
+
+
+class DBHistoryMeta(Base):
+    __tablename__ = "history_meta"
+
+    id: uuid.UUID = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    summary: str = db.Column(db.Text, nullable=True)
+    summary_index: int = db.Column(db.Integer, nullable=True)
+
+    user_id = db.Column(UUID(as_uuid=True), db.ForeignKey("users.id"), nullable=False)
+
+    user = relationship("DBUser", back_populates="histories", lazy="selectin")
+    messages = relationship(
+        "DBMessage",
+        back_populates="history",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
+
+    files = relationship(
+        "DBFileMeta",
+        secondary=history_file_association,
+        back_populates="histories",
+        lazy="selectin",
+    )

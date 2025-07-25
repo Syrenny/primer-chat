@@ -1,45 +1,13 @@
 from uuid import UUID
 
+from shared_models.user.persona import UserPersona
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from sqlalchemy.orm import joinedload
-from src.db.models import DBFileMeta, DBUser
+from src.db.models import DBUser
 from src.db.wrap import transactional
 
 
 class DaoUser:
-    @classmethod
-    @transactional
-    async def find_user(cls, session: AsyncSession, file_id: UUID) -> None | DBUser:
-        stmt = (
-            select(DBFileMeta)
-            .options(joinedload(DBFileMeta.user))
-            .filter(DBFileMeta.file_id == file_id)
-        )
-
-        result = await session.execute(stmt)
-
-        return result.scalars().first().user
-
-    @classmethod
-    @transactional
-    async def create_user(
-        cls, session: AsyncSession, email: str, password: str
-    ) -> DBUser | None:
-        """Создает нового пользователя."""
-        user = DBUser(email=email, password=password)
-        session.add(user)
-        return user
-
-    @classmethod
-    @transactional
-    async def get_user_by_email(
-        cls, session: AsyncSession, email: str
-    ) -> DBUser | None:
-        """Возвращает пользователя по email, или None, если пользователь не найден."""
-        result = await session.execute(select(DBUser).filter(DBUser.email == email))
-        return result.scalar_one_or_none()
-
     @classmethod
     @transactional
     async def get_user_by_id(
@@ -47,3 +15,51 @@ class DaoUser:
     ) -> DBUser | None:
         result = await session.execute(select(DBUser).filter(DBUser.id == user_id))
         return result.scalar_one_or_none()
+
+    @classmethod
+    @transactional
+    async def get_user_by_token(
+        cls, session: AsyncSession, token: str
+    ) -> DBUser | None:
+        stmt = select(DBUser).join(DBUser.token).filter(DBUser.token.has(token=token))
+        result = await session.execute(stmt)
+        return result.scalar_one_or_none()
+
+    @classmethod
+    @transactional
+    async def update_persona(
+        cls, session: AsyncSession, user_id: UUID, persona: UserPersona
+    ) -> None:
+        user = await cls.get_user_by_id(session=session, user_id=user_id)
+        if user is not None:
+            user.persona = persona.model_dump()
+
+    @classmethod
+    @transactional
+    async def get_persona(
+        cls, session: AsyncSession, user_id: UUID
+    ) -> UserPersona | None:
+        user = await cls.get_user_by_id(session=session, user_id=user_id)
+        if user and user.persona:
+            return UserPersona(**user.persona)
+        return None
+
+    @classmethod
+    @transactional
+    async def create_user(
+        cls, session: AsyncSession, user_id: UUID, persona: UserPersona | None = None
+    ) -> DBUser:
+        user = DBUser(
+            id=user_id,
+            persona=(persona or UserPersona()).model_dump(),
+        )
+        session.add(user)
+        await session.flush()
+        return user
+
+    @classmethod
+    @transactional
+    async def delete_user(cls, session: AsyncSession, user_id: UUID) -> None:
+        user = await cls.get_user_by_id(session=session, user_id=user_id)
+        if user:
+            await session.delete(user)

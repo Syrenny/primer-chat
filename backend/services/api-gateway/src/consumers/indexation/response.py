@@ -1,31 +1,32 @@
-import json
-
-from aiokafka import AIOKafkaConsumer
-from loguru import logger
 from shared_config import config
-from src.schemas.indexing import IndexedResultPayload  # Pydantic-модель
-from src.services.chunk_service import ChunkService
+from shared_models.indexation.interface import IndexationWorkerResponse
+from src.consumers.base import BaseKafkaConsumer
+from src.db.session import session_manager
+from src.services.chunks import ChunkService
+from src.services.files import FileService
 
 
-async def consume_indexing_results():
-    consumer = AIOKafkaConsumer(
-        config.kafka.indexation.response.topic,
-        bootstrap_servers=config.kafka.bootstrap_servers,
-        group_id=config.kafka.indexation.response.group_id,
-        auto_offset_reset=config.kafka.auto_offset_reset,
-        enable_auto_commit=config.kafka.enable_auto_commit,
-    )
+class IndexationResultConsumer(BaseKafkaConsumer):
+    def __init__(self):
+        super().__init__(
+            topic=config.kafka.indexation.response.topic,
+            group_id=config.kafka.indexation.response.group_id,
+        )
 
-    async with consumer:
-        async for msg in consumer:
-            try:
-                data = json.loads(msg.value)
-                payload = IndexedResultPayload(**data)
+    async def handle_message(self, payload: dict):
+        data = IndexationWorkerResponse.model_validate(payload)
 
-                await ChunkService.save_chunks(
-                    file_id=payload.file_id,
-                    user_id=payload.user_id,
-                    chunks=payload.chunks,
-                )
-            except Exception:
-                logger.exception("Failed to process indexing result")
+        async with session_manager.session() as session:
+            await ChunkService.save_chunks(
+                file_id=data.context.file_id,
+                user_id=data.context.user_id,
+                chunks=data.chunks,
+                session=session,
+            )
+
+            await FileService.set_is_indexed(
+                file_id=data.context.file_id,
+                user_id=data.context.user_id,
+                session=session,
+                value=True,
+            )

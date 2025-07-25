@@ -1,20 +1,27 @@
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel
 
 from shared_models.openai.completions import ChatCompletionResponse, ChatMessage
 from shared_models.user.persona import UserPersona
+from shared_models.worker.context import WorkerRequestContext
 
 
 class GenerationWorkerRequest(BaseModel):
+    context: WorkerRequestContext
     request_id: str
+
     history: list[ChatMessage]
     query: str
-    context: Any
+    chunks: Any
     summary: Any
     persona: UserPersona
 
 
 class GenerationWorkerChunkResponse(BaseModel):
+    context: WorkerRequestContext
     request_id: str
+
+    type: Literal["default", "error"] = "default"
     chunk: ChatCompletionResponse
+    is_final: bool = False

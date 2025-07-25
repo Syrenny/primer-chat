@@ -10,12 +10,20 @@ class UvicornConfig(BaseModel):
     reload: bool
 
 
+class GenerationConfig(BaseModel):
+    wait_for_stream_timeout: int
+
+    max_len_history: 10
+
+
 class Config(BaseModel):
     max_files_per_user: int
 
     cors_allow_origins: list[str]
 
     uvicorn: UvicornConfig
+
+    generation: GenerationConfig
 
 
 def load_config(env: str) -> Config:

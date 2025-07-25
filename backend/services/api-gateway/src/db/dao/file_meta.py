@@ -37,7 +37,7 @@ class DaoFileMeta:
 
     @classmethod
     @transactional
-    async def find_file_meta(
+    async def get_file_meta(
         cls, session: AsyncSession, user_id: UUID, file_id: UUID
     ) -> None | DBFileMeta:
         stmt = select(DBFileMeta).filter(
@@ -56,7 +56,7 @@ class DaoFileMeta:
         user_id: UUID,
         file_id: UUID,
     ) -> None | DBFileMeta:
-        db_file_meta = await cls.find_file_meta(session, user_id, file_id)
+        db_file_meta = await cls.get_file_meta(session, user_id, file_id)
 
         if db_file_meta:
             await session.delete(db_file_meta)
@@ -65,35 +65,33 @@ class DaoFileMeta:
 
     @classmethod
     @transactional
-    async def set_indexed(
-        cls,
-        session: AsyncSession,
-        user_id: UUID,
-        file_id: UUID,
-    ) -> bool:
-        stmt = select(DBFileMeta).filter(
-            DBFileMeta.user_id == user_id,
-            DBFileMeta.file_id == file_id,
+    async def get_is_indexed(
+        cls, session: AsyncSession, user_id: UUID, file_id: UUID
+    ) -> bool | None:
+        db_file_meta = await cls.get_file_meta(
+            session=session,
+            user_id=user_id,
+            file_id=file_id,
         )
 
-        result = await session.execute(stmt)
-        db_file_meta = result.scalars().first()
-        if db_file_meta:
-            db_file_meta.is_indexed = True
-            return True
-        return False
+        if db_file_meta is None:
+            return None
+
+        return db_file_meta.is_indexed
 
     @classmethod
     @transactional
-    async def is_indexed(
-        cls,
-        session: AsyncSession,
-        user_id: UUID,
-        file_id: UUID,
+    async def set_is_indexed(
+        cls, session: AsyncSession, user_id: UUID, file_id: UUID, value: bool
     ) -> bool | None:
-        db_file_meta = await cls.find_file_meta(
-            session=session, user_id=user_id, file_id=file_id
+        db_file_meta = await cls.get_file_meta(
+            session=session,
+            user_id=user_id,
+            file_id=file_id,
         )
+
         if db_file_meta is None:
             return None
-        return db_file_meta.is_indexed
+
+        db_file_meta.is_indexed = value
+        return value

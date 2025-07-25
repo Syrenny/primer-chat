@@ -1,7 +1,6 @@
 from uuid import UUID
 
 import sqlalchemy as db
-from server.models import Action
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from src.db.models import DBChunk, DBMessage
@@ -15,21 +14,19 @@ class DaoMessages:
         cls,
         session: AsyncSession,
         user_id: UUID,
-        file_id: UUID,
+        history_id: UUID,
         content: str,
         is_user: bool,
-        action: Action,
         context: list[DBChunk] | None = None,
         snippet: str | None = None,
     ) -> DBMessage:
         context = context or []
         new_message = DBMessage(
             user_id=user_id,
-            file_id=file_id,
+            history_id=history_id,
             content=content,
             context=context,
             is_user_message=is_user,
-            action=action.value,
             snippet=snippet,
         )
 
@@ -41,11 +38,11 @@ class DaoMessages:
     @classmethod
     @transactional
     async def get_messages(
-        cls, session: AsyncSession, user_id: UUID, file_id: UUID
+        cls, session: AsyncSession, user_id: UUID, history_id: UUID
     ) -> list[DBMessage]:
         result = await session.execute(
             db.select(DBMessage)
-            .filter(DBMessage.user_id == user_id, DBMessage.file_id == file_id)
+            .filter(DBMessage.user_id == user_id, DBMessage.history_id == history_id)
             .options(selectinload(DBMessage.context))
             .order_by(DBMessage.timestamp)
         )

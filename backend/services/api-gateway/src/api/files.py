@@ -5,11 +5,10 @@ from shared_adapters.s3 import S3Storage
 from src.context.session import SessionContext
 from src.db.dao import DaoFileMeta
 from src.db.session import AsyncSession, get_db
-from src.models.files import FileMeta
+from src.models.files import FileMeta, FileStatus, SignedUrl
+from src.services import FileService, get_file_service
 
 router = APIRouter()
-from src.models.files import FileStatus, SignedUrl
-from src.services import FileService, get_file_service
 
 
 @router.post(
@@ -36,7 +35,7 @@ async def get_indexing_status(
     session: AsyncSession = Depends(get_db),
     user_id: UUID = Depends(SessionContext.get_user_id),
 ) -> FileStatus:
-    status = await DaoFileMeta.is_indexed(
+    status = await DaoFileMeta.get_is_indexed(
         session=session, user_id=user_id, file_id=file_id
     )
     return FileStatus(file_id=file_id, status=status)

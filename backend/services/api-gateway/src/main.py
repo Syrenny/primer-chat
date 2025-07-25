@@ -1,3 +1,5 @@
+from contextlib import asynccontextmanager
+
 import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
@@ -13,9 +15,25 @@ from src.api import (
 )
 from src.api.middleware import SessionMiddleware
 from src.config import config
+from src.consumers.base import BaseKafkaConsumer
+from src.consumers.indexation.response import IndexationResultConsumer
 from src.exceptions.base import AppException
 
-app = FastAPI()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    consumers: list[BaseKafkaConsumer] = [IndexationResultConsumer()]
+
+    for consumer in consumers:
+        await consumer.start()
+
+    yield
+
+    for consumer in consumers:
+        await consumer.stop()
+
+
+app = FastAPI(lifespan=lifespan)
 
 
 @app.exception_handler(RequestValidationError)
