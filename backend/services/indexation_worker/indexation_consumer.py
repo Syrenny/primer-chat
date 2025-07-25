@@ -3,11 +3,11 @@ from functools import lru_cache
 
 from aiokafka import AIOKafkaConsumer, AIOKafkaProducer
 from loguru import logger
+from shared_adapters.s3 import S3Storage
 from shared_models.indexation.interface import (
     IndexationWorkerRequest,
     IndexationWorkerResponse,
 )
-from src.adapters.s3 import get_pdf_bytes
 from src.config import config
 from src.services.indexation import IndexationService
 
@@ -37,7 +37,7 @@ async def consume_indexation():
             worker_response = IndexationWorkerResponse(request_id=request.request_id)
 
             try:
-                pdf_bytes = await get_pdf_bytes(request.s3_link)
+                pdf_bytes = await S3Storage.get_pdf_bytes_from_url(request.s3_link)
 
                 service = get_indexation_service()
                 worker_response.result = await service.run(pdf_bytes)

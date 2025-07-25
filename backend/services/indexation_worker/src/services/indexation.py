@@ -4,10 +4,11 @@ from typing import Iterable, List
 
 import fitz
 from loguru import logger
+from pydantic import ValidationError
 from shared_models.indexation.core import ChunkPosition, IndexationResult, IndexedChunk
 from shared_models.indexation.segmentation import LineSignature, StyleKey
 from shared_models.openai.completions import Usage
-from shared_models.openai.embeddings import EmbeddingsUsage
+from shared_models.openai.embeddings import EmbeddingsResponse, EmbeddingsUsage
 from src.adapters.embeddings import Embeddings
 from src.config import config
 from src.services.segmentation import SegmentationService
@@ -84,6 +85,13 @@ class BatchEmbedder:
     def append(self, content: str) -> None:
         self._buffered_texts.append(content)
 
+    def _validate_embeddings(self, response: EmbeddingsResponse) -> None:
+        length = len(response.embeddings)
+        if length != config.embeddings_dimensions:
+            raise ValidationError(
+                f"Invalid embeddings dimension. Expected {config.embeddings_dimensions}, got {len(length)}"
+            )
+
     def _batch_chunks(self) -> Iterable[list[str]]:
         it = iter(self._buffered_texts)
         while True:
@@ -100,6 +108,7 @@ class BatchEmbedder:
 
         result: list[list[float]] = []
         for embeddings_result in await asyncio.gather(*tasks):
+            self._validate_embeddings(embeddings_result)
             result += embeddings_result.embeddings
             self.embeddings_usage += embeddings_result.usage
 

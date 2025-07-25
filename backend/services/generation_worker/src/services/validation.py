@@ -1,14 +1,14 @@
 from loguru import logger
 from pydantic import ValidationError
+from shared_adapters.openai import OpenAIFullCompletions
 from shared_models.openai.completions import ChatMessage
-from src.adapters.openai import OpenAIValidator
 from src.models.validator import ValidatorResponse
 from src.prompts.render import render_prompt
 
 
 class ValidationService:
     def __init__(self) -> None:
-        self.completions = OpenAIValidator()
+        self.completions = OpenAIFullCompletions()
 
     def _parse_response(self, response: str) -> ValidatorResponse | None:
         try:

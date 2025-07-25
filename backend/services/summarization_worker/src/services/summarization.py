@@ -1,14 +1,14 @@
 from loguru import logger
 from pydantic import ValidationError
+from shared_adapters.openai import OpenAIFullCompletions
 from shared_models.openai.completions import ChatCompletionResponse, ChatMessage, Usage
 from shared_models.summarization.core import ParsedSummaryResponse
-from src.adapters.openai import OpenAISummarizer
 from src.prompts.render import render_prompt
 
 
 class SummaryService:
     def __init__(self) -> None:
-        self.summarizer = OpenAISummarizer()
+        self.summarizer = OpenAIFullCompletions()
         self.index = 0
 
     async def _make_summary(self, history: list[ChatMessage]) -> ChatCompletionResponse:

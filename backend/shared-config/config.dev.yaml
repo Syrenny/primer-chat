@@ -1,0 +1,56 @@
+openai:
+    model: 'gpt-4o'
+    base_url: 'https://api.openai.com/v1'
+    temperature: 0.7
+    max_tokens: 1024
+    throttle_rate_limit: 60
+    throttle_period: 60.0
+
+embeddings:
+    model: 'text-embedding-3-small'
+    base_url: 'https://api.openai.com/v1'
+    dimensions: 1536
+    throttle_rate_limit: 100
+    throttle_period: 60.0
+
+kafka:
+    bootstrap_servers: 'localhost:9092'
+    auto_offset_reset: 'earliest'
+    enable_auto_commit: true
+    max_poll_records: 100
+    session_timeout_ms: 10000
+
+    defaults:
+        partitions: 3
+        replication_factor: 1
+
+    indexation:
+        request:
+            topic: 'tasks.indexation'
+            group_id: 'indexation-workers'
+        response:
+            topic: 'results.indexation'
+            group_id: 'indexation-result-handler'
+
+    generation:
+        request:
+            topic: 'tasks.generation'
+            group_id: 'generation-workers'
+        response:
+            topic: 'results.generation'
+            group_id: 'generation-result-handler'
+
+    summarization:
+        request:
+            topic: 'tasks.summarization'
+            group_id: 'summarization-workers'
+        response:
+            topic: 'results.summarization'
+            group_id: 'summarization-result-handler'
+
+s3:
+    service_name: 's3'
+    region: 'ru-central1'
+    endpoint: 'https://s3.yandexcloud.net'
+    bucket: 'your-bucket-name'
+    presign_expire_seconds: 3600
