@@ -2,7 +2,7 @@ from loguru import logger
 from pydantic import ValidationError
 from shared_adapters.openai import OpenAIFullCompletions
 from shared_models.openai.completions import ChatCompletionResponse, ChatMessage, Usage
-from shared_models.summarization.core import ParsedSummaryResponse
+from src.models.summarization import ParsedSummaryResponse
 from src.prompts.render import render_prompt
 
 

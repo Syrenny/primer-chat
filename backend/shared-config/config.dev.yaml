@@ -14,7 +14,7 @@ embeddings:
     throttle_period: 60.0
 
 kafka:
-    bootstrap_servers: 'localhost:9092'
+    bootstrap_servers: 'localhost:19092'
     auto_offset_reset: 'earliest'
     enable_auto_commit: true
     max_poll_records: 100
@@ -33,26 +33,14 @@ kafka:
             group_id: 'indexation-result-handler'
 
     generation:
-        request:
-            topic: 'tasks.generation'
-            group_id: 'generation-workers'
-        response:
-            topic: 'results.generation'
-            group_id: 'generation-result-handler'
-
-    summarization:
-        request:
-            topic: 'tasks.summarization'
-            group_id: 'summarization-workers'
-        response:
-            topic: 'results.summarization'
-            group_id: 'summarization-result-handler'
+        topic: 'tasks.generation'
+        group_id: 'generation-workers'
 
 s3:
     service_name: 's3'
     region: 'ru-central1'
-    endpoint: 'https://s3.yandexcloud.net'
-    bucket: 'your-bucket-name'
+    endpoint: '0.0.0.0:9001'
+    bucket: 'primer-chat-pdf'
     presign_expire_seconds: 3600
 
 redis:

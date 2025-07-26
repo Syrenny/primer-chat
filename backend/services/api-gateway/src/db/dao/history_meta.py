@@ -37,8 +37,6 @@ class DaoHistoryMeta:
         )
         session.add(file_meta)
 
-        await session.flush()
-
         return file_meta
 
     @classmethod

@@ -1,0 +1,25 @@
+sources:
+    docker_logs:
+        type: docker_logs
+        auto_partial_merge: true
+        docker_host: unix:///var/run/docker.sock
+
+transforms:
+    parse_logs:
+        type: remap
+        inputs: [docker_logs]
+        source: |
+            .container_name = .container.name
+            .service = split(.container_name, "-")[1] ?? "unknown"
+            .timestamp = now()
+
+sinks:
+    to_loki:
+        type: loki
+        inputs: [parse_logs]
+        endpoint: http://chat-loki:3100
+        encoding:
+            codec: json
+        labels:
+            container: '{{ container_name }}'
+            service: '{{ service }}'

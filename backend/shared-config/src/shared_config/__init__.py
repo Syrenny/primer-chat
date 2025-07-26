@@ -1,14 +1,20 @@
+from pathlib import Path
 from typing import Literal
 from zoneinfo import ZoneInfo
 
 import yaml  # type: ignore
 from loguru import logger
-from pydantic import BaseModel, SecretStr
+from pydantic import BaseModel, PostgresDsn, SecretStr, computed_field
+from pydantic_core import MultiHostUrl
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+BASE_DIR = Path(__file__).parent.parent.parent
 
 
 class Secrets(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+    model_config = SettingsConfigDict(
+        env_file=BASE_DIR / ".env", env_file_encoding="utf-8"
+    )
 
     app_env: Literal["prod", "dev"]
 
@@ -18,8 +24,23 @@ class Secrets(BaseSettings):
     s3_access_key: SecretStr
     s3_secret_key: SecretStr
 
+    postgres_db: SecretStr
+    postgres_user: SecretStr
+    postgres_password: SecretStr
+
     def is_dev(self) -> bool:
         return self.app_env == "dev"
+
+    @computed_field
+    def sqlalchemy_url(self) -> PostgresDsn:
+        return MultiHostUrl.build(
+            scheme="postgresql+asyncpg",
+            username=self.postgres_user.get_secret_value(),
+            password=self.postgres_password.get_secret_value(),
+            host="localhost",
+            port=5000,
+            path=self.postgres_db.get_secret_value(),
+        )
 
 
 class KafkaDefaults(BaseModel):
@@ -47,8 +68,7 @@ class KafkaConfig(BaseModel):
     defaults: KafkaDefaults
 
     indexation: KafkaTopicPair
-    generation: KafkaTopicPair
-    summarization: KafkaTopicPair
+    generation: KafkaConsumer
 
 
 class S3Config(BaseModel):
@@ -62,7 +82,7 @@ class S3Config(BaseModel):
 class RedisConfig(BaseModel):
     host: str
     port: int
-    db: 0
+    db: int
     stream_key: str
 
 
@@ -94,7 +114,7 @@ class Config(BaseModel):
 
 
 def load_config(env: str) -> Config:
-    with open(f"./config.{env}.yaml") as f:
+    with open(BASE_DIR / f"config.{env}.yaml") as f:
         raw = yaml.safe_load(f)
 
     return Config(**raw)

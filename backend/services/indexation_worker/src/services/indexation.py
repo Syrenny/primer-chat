@@ -9,7 +9,7 @@ from shared_models.indexation.core import ChunkPosition, IndexationResult, Index
 from shared_models.indexation.segmentation import LineSignature, StyleKey
 from shared_models.openai.completions import Usage
 from shared_models.openai.embeddings import EmbeddingsResponse, EmbeddingsUsage
-from src.adapters.embeddings import Embeddings
+from shared_adapters.openai import Embeddings
 from src.config import config
 from src.services.segmentation import SegmentationService
 
@@ -89,7 +89,7 @@ class BatchEmbedder:
         length = len(response.embeddings)
         if length != config.embeddings_dimensions:
             raise ValidationError(
-                f"Invalid embeddings dimension. Expected {config.embeddings_dimensions}, got {len(length)}"
+                f"Invalid embeddings dimension. Expected {config.embeddings_dimensions}, got {length}"
             )
 
     def _batch_chunks(self) -> Iterable[list[str]]:

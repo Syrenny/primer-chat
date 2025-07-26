@@ -47,14 +47,12 @@ class DaoUser:
     @classmethod
     @transactional
     async def create_user(
-        cls, session: AsyncSession, user_id: UUID, persona: UserPersona | None = None
+        cls, session: AsyncSession, persona: UserPersona | None = None
     ) -> DBUser:
         user = DBUser(
-            id=user_id,
             persona=(persona or UserPersona()).model_dump(),
         )
         session.add(user)
-        await session.flush()
         return user
 
     @classmethod

@@ -31,7 +31,6 @@ class DaoMessages:
         )
 
         session.add(new_message)
-        await session.flush()
 
         return new_message
 

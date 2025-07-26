@@ -1,4 +1,3 @@
-from collections.abc import AsyncIterator
 from typing import AsyncIterator, Sequence
 from uuid import UUID
 
@@ -10,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.config import config
 from src.consumers.indexation.request import IndexationProducer
 from src.db.dao import DaoFileMeta
-from src.exceptions import FilesValidationError
+from src.db.models import DBFileMeta
 from src.exceptions.files import (
     FilesInvalidPdfError,
     FilesInvalidTypeError,
@@ -30,11 +29,11 @@ class UploadFileReader:
         return content
 
     parsers = {
-        "application/pdf": _parse_pdf.__func__,
+        "application/pdf": _parse_pdf,
     }
 
     @classmethod
-    def _validate(cls, file: UploadFile):
+    def _validate(cls, file: UploadFile) -> None:
         if file.content_type not in cls.allowed_mime_types:
             raise FilesInvalidTypeError(file.filename)
 
@@ -75,8 +74,8 @@ class FileProcessor:
         )
 
     @staticmethod
-    async def _validate_limits(session: AsyncSession, user_id: UUID):
-        files = await DaoFileMeta.list_file_meta(session, user_id)
+    async def _validate_limits(session: AsyncSession, user_id: UUID) -> None:
+        files = await DaoFileMeta.list_file_meta(session=session, user_id=user_id)
         if len(files) + 1 > config.max_files_per_user:
             raise FilesValidationError(config.max_files_per_user)
 
@@ -86,7 +85,9 @@ class FileProcessor:
         return content
 
     @staticmethod
-    async def _store_metadata(session: AsyncSession, user_id: UUID, filename: str):
+    async def _store_metadata(
+        session: AsyncSession, user_id: UUID, filename: str
+    ) -> DBFileMeta:
         return await DaoFileMeta.add_file_meta(
             session=session, user_id=user_id, filename=filename
         )
@@ -98,7 +99,7 @@ class FileProcessor:
         )
 
     @staticmethod
-    async def _enqueue_indexation(s3_link: str, user_id: UUID, file_id: UUID):
+    async def _enqueue_indexation(s3_link: str, user_id: UUID, file_id: UUID) -> None:
         context = WorkerRequestContext(user_id=user_id, file_id=file_id)
         request = IndexationWorkerRequest(s3_link=s3_link, context=context)
         async with IndexationProducer() as producer:

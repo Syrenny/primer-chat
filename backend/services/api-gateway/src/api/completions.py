@@ -5,7 +5,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 from loguru import logger
-from src.context.session import SessionContext
+from src.context.user_context import SessionContext
 from src.db.session import AsyncSession, get_db
 from src.models.completions import APICompletionsChunkResponse, APICompletionsRequest
 from src.services.generation import GenerationService

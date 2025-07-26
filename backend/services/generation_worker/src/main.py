@@ -16,7 +16,7 @@ def get_generation_service() -> GenerationService:
     return GenerationService()
 
 
-async def consume():
+async def consume() -> None:
     consumer = AIOKafkaConsumer(
         config.kafka_request_topic,
         bootstrap_servers=config.kafka_bootstrap_servers,

@@ -20,4 +20,4 @@ class SessionContext:
         context = cls._user_context.get()
         if not context:
             raise ValueError("Session context unavailable")
-        return context
+        return context.user_id

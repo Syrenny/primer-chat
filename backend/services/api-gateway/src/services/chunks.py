@@ -1,10 +1,11 @@
 from functools import lru_cache
 from uuid import UUID
 
-from shared_adapters.openai.embeddings import Embeddings
+from shared_adapters.openai import Embeddings
 from shared_models.indexation.core import ChunkPosition, IndexedChunk
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.db.dao import DaoChunks, DBChunk
+from src.db.dao import DaoChunks
+from src.db.models import DBChunk
 
 
 @lru_cache
@@ -67,8 +68,9 @@ class ChunkService:
 
         return cls.from_db_chunks(db_chunks)
 
+    @classmethod
     async def delete_chunks(
-        user_id: UUID, file_id: UUID, session: AsyncSession
+        cls, user_id: UUID, file_id: UUID, session: AsyncSession
     ) -> None:
         await DaoChunks.delete_file_chunks(
             session=session, user_id=user_id, file_id=file_id

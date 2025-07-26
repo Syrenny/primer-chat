@@ -1,0 +1,150 @@
+services:
+    zookeeper:
+        image: confluentinc/cp-zookeeper:7.5.0
+        container_name: chat-zookeeper
+        environment:
+            ZOOKEEPER_CLIENT_PORT: 2181
+        networks:
+            - chat-net
+        restart: unless-stopped
+
+    kafka:
+        image: confluentinc/cp-kafka:7.5.0
+        container_name: chat-kafka
+        depends_on:
+            - zookeeper
+        ports:
+            - '19092:19092'
+        environment:
+            KAFKA_BROKER_ID: 1
+            KAFKA_ZOOKEEPER_CONNECT: chat-zookeeper:2181
+
+            KAFKA_LISTENERS: INTERNAL://0.0.0.0:9092,EXTERNAL://0.0.0.0:19092
+            KAFKA_ADVERTISED_LISTENERS: INTERNAL://chat-kafka:9092,EXTERNAL://localhost:19092
+            KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+            KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+            KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+        networks:
+            - chat-net
+        restart: unless-stopped
+
+    redis:
+        image: redis:7.2-alpine
+        container_name: chat-redis
+        ports:
+            - '6379:6379'
+        networks:
+            - chat-net
+        restart: unless-stopped
+
+    minio:
+        image: minio/minio:latest
+        container_name: chat-minio
+        command: server /data --console-address ":9001"
+        ports:
+            - '9000:9000' # S3 API
+            - '9001:9001' # Web UI
+        env_file: 'infra.env'
+        environment:
+            MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+            MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+        volumes:
+            - minio-data:/data
+        networks:
+            - chat-net
+        restart: unless-stopped
+        healthcheck:
+            test:
+                ['CMD', 'curl', '-f', 'http://localhost:9000/minio/health/live']
+            interval: 5s
+            timeout: 3s
+            retries: 5
+            start_period: 5s
+
+    minio-init:
+        image: minio/mc
+        container_name: chat-minio-init
+        depends_on:
+            minio:
+                condition: service_healthy
+        entrypoint: >
+            /bin/sh -c "
+              mc alias set local http://minio:9000 ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD}
+
+              mc admin user add local ${MINIO_USER} ${MINIO_PASSWORD}
+
+              mc admin policy attach local readwrite --user ${MINIO_USER}
+
+              mc mb --ignore-existing local/primer-chat-pdf
+            "
+        networks:
+            - chat-net
+        env_file: 'infra.env'
+
+    postgres:
+        container_name: chat-postgres
+        image: pgvector/pgvector:pg15
+        command:
+            - 'postgres'
+            - '-c'
+            - 'max_connections=50'
+            - '-c'
+            - 'shared_buffers=1GB'
+            - '-c'
+            - 'effective_cache_size=4GB'
+            - '-c'
+            - 'work_mem=16MB'
+            - '-c'
+            - 'maintenance_work_mem=512MB'
+            - '-c'
+            - 'random_page_cost=1.1'
+            - '-c'
+            - 'temp_file_limit=10GB'
+            - '-c'
+            - 'log_min_duration_statement=200ms'
+            - '-c'
+            - 'idle_in_transaction_session_timeout=10s'
+            - '-c'
+            - 'lock_timeout=1s'
+            - '-c'
+            - 'statement_timeout=60s'
+            - '-c'
+            - 'shared_preload_libraries=pg_stat_statements'
+            - '-c'
+            - 'pg_stat_statements.max=10000'
+            - '-c'
+            - 'pg_stat_statements.track=all'
+        env_file: 'infra.env'
+        environment:
+            POSTGRES_DB: ${POSTGRES_DB}
+            POSTGRES_USER: ${POSTGRES_USER}
+            POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+            PGDATA: '/var/lib/postgresql/data/pgdata'
+        volumes:
+            - init-database:/docker-entrypoint-initdb.d
+            - postgres-data:/var/lib/postgresql/data
+        ports:
+            - '5432:5432'
+        healthcheck:
+            test:
+                [
+                    'CMD-SHELL',
+                    'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}',
+                ]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+            start_period: 10s
+        restart: unless-stopped
+        networks:
+            - chat-net
+
+volumes:
+    minio-data:
+    postgres-data:
+    init-database:
+
+networks:
+    chat-net:
+        driver: bridge

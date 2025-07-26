@@ -3,7 +3,7 @@ import json
 import re
 from typing import List, get_args
 
-from src.adapters.openai import FullCompletions
+from shared_adapters.openai import OpenAIFullCompletions
 from src.config import config
 from src.exceptions import ResponseParsingError
 from shared_models.openai.completions import ChatMessage, Usage
@@ -20,7 +20,7 @@ semaphore = asyncio.Semaphore(config.max_concurrent_segments)
 
 class SegmentationService:
     def __init__(self) -> None:
-        self.completions = FullCompletions()
+        self.completions = OpenAIFullCompletions()
 
     def _build_system_prompt(self, lines: List[LineSignature]) -> ChatMessage:
         tags = get_args(HTMLTag)

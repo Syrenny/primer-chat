@@ -13,10 +13,13 @@ class UvicornConfig(BaseModel):
 class GenerationConfig(BaseModel):
     wait_for_stream_timeout: int
 
-    max_len_history: 10
+    max_len_history: int
 
 
 class Config(BaseModel):
+    cookie_name: str
+    cookie_max_age: int
+
     max_files_per_user: int
 
     cors_allow_origins: list[str]

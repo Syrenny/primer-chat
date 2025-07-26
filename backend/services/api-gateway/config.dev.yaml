@@ -1,3 +1,6 @@
+cookie_name: primer-chat-cookie
+cookie_max_age: 31536000 # 1 год
+
 max_files_per_user: 10
 
 cors_allow_origins:

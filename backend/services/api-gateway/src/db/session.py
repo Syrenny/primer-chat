@@ -1,18 +1,17 @@
 import contextlib
 from collections.abc import AsyncIterator
 
-import sqlalchemy as db
+from alembic import command
+from alembic.config import Config
+from anyio import to_thread
+from loguru import logger
+from shared_config import secrets
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
     async_sessionmaker,
     create_async_engine,
 )
-from src.config import secrets
-from src.db.dao.token import DaoToken
-from src.db.dao.user import DaoUser
-
-from .models import Base
 
 
 class NotInitializedError(Exception):
@@ -21,7 +20,7 @@ class NotInitializedError(Exception):
 
 # Reference: https://dev.to/akarshan/asynchronous-database-sessions-in-fastapi-with-sqlalchemy-1o7e
 class DatabaseSessionManager:
-    def __init__(self):
+    def __init__(self) -> None:
         self._engine: AsyncEngine | None = None
         self._sessionmaker: async_sessionmaker | None = None
 
@@ -37,9 +36,9 @@ class DatabaseSessionManager:
             raise NotInitializedError("Sessionmaker is not initialized.")
         return self._sessionmaker
 
-    async def init_db(self, url: str) -> None:
+    async def init_db(self) -> None:
         self._engine = create_async_engine(
-            url,
+            str(secrets.sqlalchemy_url),
             pool_pre_ping=True,
         )
         self._sessionmaker = async_sessionmaker(
@@ -50,72 +49,16 @@ class DatabaseSessionManager:
             class_=AsyncSession,
         )
 
-        await self.__create_schema()
+        await to_thread.run_sync(self._run_migrations)
 
-        await self.__create_default_user()
+        logger.debug("Migration end")
 
-    async def __create_schema(self):
-        async with self.engine.connect() as conn:
-            conn = await conn.execution_options(isolation_level="AUTOCOMMIT")
-            await conn.execute(db.text("CREATE EXTENSION IF NOT EXISTS vector"))
-            await conn.run_sync(Base.metadata.create_all)
-            await conn.execute(
-                db.text("""
-                DO $$
-                BEGIN
-                    IF NOT EXISTS (
-                        SELECT 1 FROM information_schema.columns
-                        WHERE table_name='chunks' AND column_name='embedding'
-                    ) THEN
-                        ALTER TABLE chunks ADD COLUMN embedding vector(768);
-                    END IF;
-                END$$;
-            """)
-            )
+    def _run_migrations(self) -> None:
+        alembic_cfg = Config("alembic.ini")
+        alembic_cfg.set_main_option("sqlalchemy.url", str(secrets.sqlalchemy_url))
+        command.upgrade(alembic_cfg, "head")
 
-            # Create index if it doesn't exist
-            await conn.execute(
-                db.text("""
-                DO $$
-                BEGIN
-                    IF NOT EXISTS (
-                        SELECT 1 FROM pg_indexes
-                        WHERE tablename = 'chunks' AND indexname = 'chunks_embedding_idx'
-                    ) THEN
-                        CREATE INDEX chunks_embedding_idx
-                        ON chunks USING ivfflat (embedding vector_cosine_ops)
-                        WITH (lists = 100);
-                    END IF;
-                END$$;
-            """)
-            )
-
-            # Analyze table
-            await conn.execute(db.text("ANALYZE chunks"))
-
-    async def __create_default_user(self):
-        user_model = UserModel(
-            email=secrets.default_admin_email.get_secret_value(),
-            password=secrets.default_admin_password.get_secret_value(),
-        )
-        async with self.sessionmaker() as session:
-            user = await DaoUser.get_user_by_email(
-                session, email=secrets.default_admin_email.get_secret_value()
-            )
-            if user is None:
-                db_user = await DaoUser.create_user(
-                    session,
-                    email=user_model.email,
-                    password=hash_password(user_model.password),
-                )
-                await session.flush()
-                token = generate_access_token(db_user)
-                await DaoToken.create_token(
-                    session=session, user_id=db_user.id, token=token
-                )
-                await session.commit()
-
-    async def close(self):
+    async def close(self) -> None:
         if self._engine is not None:
             await self.engine.dispose()
             self._engine = None
@@ -127,6 +70,7 @@ class DatabaseSessionManager:
         try:
             yield session
         except Exception as e:
+            logger.exception(str(e))
             await session.rollback()
             raise e
         finally:

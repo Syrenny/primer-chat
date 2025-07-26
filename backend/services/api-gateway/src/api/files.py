@@ -2,7 +2,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
 from shared_adapters.s3 import S3Storage
-from src.context.session import SessionContext
+from src.context.user_context import SessionContext
 from src.db.dao import DaoFileMeta
 from src.db.session import AsyncSession, get_db
 from src.models.files import FileMeta, FileStatus, SignedUrl

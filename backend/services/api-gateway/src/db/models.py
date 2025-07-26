@@ -39,8 +39,8 @@ class DBUser(Base):
         JSONB, nullable=False, default=lambda: UserPersona().model_dump()
     )
 
-    token = relationship(
-        "DBToken", back_populates="user", uselist=False, lazy="selectin"
+    cookie = relationship(
+        "DBUserCookie", back_populates="user", uselist=False, lazy="selectin"
     )
     files_meta = relationship(
         "DBFileMeta",
@@ -66,17 +66,13 @@ class DBUser(Base):
     )
 
 
-class DBToken(Base):
-    __tablename__ = "tokens"
+class DBUserCookie(Base):
+    __tablename__ = "cookies"
 
     id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = db.Column(UUID(as_uuid=True), db.ForeignKey("users.id"), nullable=False)
-    token = db.Column(db.String, nullable=False, unique=True)
-    created_at = db.Column(
-        db.DateTime, nullable=False, default=datetime.now(UTC).replace(tzinfo=timezone)
-    )
 
-    user = relationship("DBUser", back_populates="token", lazy="selectin")
+    user = relationship("DBUser", back_populates="cookie", lazy="selectin")
 
 
 class DBFileMeta(Base):

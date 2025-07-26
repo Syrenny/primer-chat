@@ -1,0 +1,43 @@
+services:
+  loki:
+    image: grafana/loki:2.9.4
+    container_name: chat-loki
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - chat-net
+
+  grafana:
+    image: grafana/grafana:10.4.1
+    container_name: chat-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    networks:
+      - chat-net
+    depends_on:
+      - loki
+    volumes:
+      - grafana-storage:/var/lib/grafana
+
+  vector:
+    image: timberio/vector:0.37.X-alpine
+    container_name: chat-vector
+    restart: always
+    networks:
+      - chat-net
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./vector.yaml:/etc/vector/vector.yaml:ro
+    depends_on:
+      - loki
+
+networks:
+  chat-net:
+    external: true
+
+volumes:
+  grafana-storage:

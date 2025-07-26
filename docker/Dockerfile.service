@@ -1,0 +1,97 @@
+FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS builder
+
+# UV_PYTHON — фиксирует версию Python.
+# UV_PYTHON_DOWNLOADS — отключает автоматическую загрузку отсутствующих версий Python.
+# UV_PROJECT_ENVIRONMENT — указывает путь к виртуальному окружению Python.
+# UV_LINK_MODE — меняет способ установки пакетов из глобального кэша.
+#   Вместо создания жёстких ссылок, файлы пакета копируются в директорию  виртуального окружения `site-packages`.
+#   Это необходимо для будущего копирования изолированной `/app` директории из  стадии `build` в финальный Docker-образ.
+# UV_COMPILE_BYTECODE — включает компиляцию файлов Python в байт-код после установки.
+# https://docs.astral.sh/uv/configuration/environment/
+# PYTHONOPTIMIZE — убирает инструкции `assert` и код, зависящий от значения  константы `__debug__`,
+#   при компиляции файлов Python в байт-код.
+# https://docs.python.org/3/using/cmdline.html#environment-variables
+ARG SERVICE_DIR
+ENV SERVICE_DIR=${SERVICE_DIR}
+
+WORKDIR /app/services/${SERVICE_DIR}
+
+ENV UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy \
+    UV_PYTHON_DOWNLOADS=0 \
+    UV_PROJECT_ENVIRONMENT=/app/services/${SERVICE_DIR}/.venv \
+    PYTHONOPTIMIZE=1
+
+
+# Shared-пакеты
+COPY shared-adapters /app/shared-adapters
+COPY shared-config   /app/shared-config
+COPY shared-models   /app/shared-models
+
+# Для быстрой локальной установки зависимостей монтируем кэш-директорию, в которой будет храниться глобальный кэш uv.
+# Первый вызов `uv sync` создаёт виртуальное окружение и устанавливает зависимости без текущего проекта.
+# Опция `--frozen` запрещает обновлять `uv.lock` файл.
+RUN --mount=type=cache,target=/root/.cache/uv \
+    --mount=type=bind,source=services/${SERVICE_DIR}/uv.lock,target=uv.lock \
+    --mount=type=bind,source=services/${SERVICE_DIR}/pyproject.toml,target=pyproject.toml \
+    uv sync --locked --no-install-project --no-dev
+
+COPY services/${SERVICE_DIR} /app/services/${SERVICE_DIR}
+
+
+# Устанавливаем текущий проект.
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --locked --no-dev --no-editable
+
+
+FROM python:3.12-slim-bookworm AS final
+
+ARG user_id=1000
+ARG group_id=1000
+ARG SERVICE_DIR
+ENV SERVICE_DIR=${SERVICE_DIR}
+
+# Для приложений на Python лучше использовать сигнал SIGINT, так как не все фреймворки (например, gRPC) корректно обрабатывают сигнал SIGTERM.
+STOPSIGNAL SIGINT
+
+# Создаем пользователя "app" с заданными UID и GID
+RUN addgroup --gid $group_id app && \
+    adduser --uid $user_id --gid $group_id --disabled-password --gecos "" app
+
+# Набор системных пакетов
+RUN apt-get update -qq && \
+    apt-get install -y --no-install-recommends \
+    curl && \
+    rm -rf /var/lib/apt/lists/*
+
+# Установка локали
+RUN apt-get update && apt-get install -y locales \
+    && sed -i '/ru_RU.UTF-8/s/^# //g' /etc/locale.gen \
+    && locale-gen ru_RU.UTF-8
+
+ENV LANG=ru_RU.UTF-8
+ENV LANGUAGE=ru_RU:ru
+ENV LC_ALL=ru_RU.UTF-8
+
+
+
+# Копируем venv + проект
+COPY --from=builder --chown=app:app /app /app
+
+# Задаём переменные окружения.
+# PATH — добавляет директорию виртуального окружения `bin` в начало списка директорий с исполняемыми файлами.
+#   Это позволяет запускать Python-утилиты из любой директории контейнера без указания полного пути к файлу.
+# PYTHONOPTIMIZE — указывает интерпретатору Python, что нужно использовать ранее скомпилированные файлы из  директории `__pycache__` с  суффиксом `opt-1` в имени.
+# PYTHONFAULTHANDLER — устанавливает обработчики ошибок для дополнительных сигналов.
+# PYTHONUNBUFFERED — отключает буферизацию для потоков stdout и stderr.
+# https://docs.python.org/3/using/cmdline.html#environment-variables
+ENV PATH="/app/services/${SERVICE_DIR}/.venv/bin:$PATH" \
+    PYTHONUNBUFFERED=1 \
+    PYTHONFAULTHANDLER=1 \
+    PYTHONOPTIMIZE=1 \
+    UV_PROJECT_ENVIRONMENT=/app/services/${SERVICE_DIR}/.venv
+
+WORKDIR /app/services/${SERVICE_DIR}
+USER app:app
+
+ENTRYPOINT ["uv", "run", "-m", "src.main"]

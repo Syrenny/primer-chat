@@ -8,4 +8,5 @@ class UserContext(BaseModel):
 
 
 class CookieData(BaseModel):
+    id: UUID
     user_id: UUID = Field(default_factory=uuid4)

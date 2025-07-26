@@ -6,13 +6,27 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "aiokafka>=0.12.0",
+    "alembic>=1.16.4",
     "asyncio>=3.4.3",
+    "asyncpg>=0.30.0",
+    "backoff>=2.2.1",
     "fastapi>=0.116.1",
+    "jinja2>=3.1.6",
+    "kafka-python>=2.2.15",
     "loguru>=0.7.3",
     "pgvector>=0.4.1",
     "pydantic>=2.11.7",
     "pydantic-settings>=2.10.1",
+    "python-multipart>=0.0.20",
     "pyyaml>=6.0.2",
+    "shared-adapters",
+    "shared-config",
+    "shared-models",
     "sqlalchemy>=2.0.41",
     "uvicorn>=0.35.0",
 ]
+
+[tool.uv.sources]
+shared-config = { path = "../../shared-config", editable = true }
+shared-adapters = { path = "../../shared-adapters", editable = true }
+shared-models = { path = "../../shared-models", editable = true }

@@ -1,6 +1,8 @@
 import json
+from typing import AsyncIterator
 
 import redis.asyncio as redis
+from loguru import logger
 from shared_config import config
 
 
@@ -20,12 +22,12 @@ class RedisStreamClient:
         return cls._client
 
     @classmethod
-    async def publish(cls, data: dict):
+    async def publish(cls, data: dict) -> None:
         client = await cls.get_client()
         await client.xadd(config.redis.stream_key, {"data": json.dumps(data)})
 
     @classmethod
-    async def listen(cls):
+    async def listen(cls) -> AsyncIterator[dict]:
         client = await cls.get_client()
         last_id = "$"
         while True:
@@ -40,5 +42,5 @@ class RedisStreamClient:
                     try:
                         yield json.loads(fields["data"])
                     except Exception as e:
-                        print("Ошибка обработки:", e)
+                        logger(f"Redis: Ошибка обработки: {e}")
                     last_id = msg_id

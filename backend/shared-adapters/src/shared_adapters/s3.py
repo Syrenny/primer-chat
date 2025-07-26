@@ -1,24 +1,24 @@
 from uuid import UUID
-
+from typing import Any
 import aioboto3
 import aiohttp
 from loguru import logger
-from shared_config import config
+from shared_config import config, secrets
 
 
 class S3Storage:
     _client = None
 
     @classmethod
-    async def _get_client(cls):
+    async def _get_client(cls) -> Any:
         if cls._client is None:
             session = aioboto3.Session()
             cls._client = await session.client(
                 service_name=config.s3.service_name,
                 region_name=config.s3.region,
-                aws_access_key_id=config.s3.access_key,
-                aws_secret_access_key=config.s3.secret_key,
-                endpoint_url=config.s3.endpoint_url,
+                aws_access_key_id=secrets.s3_access_key.get_secret_value(),
+                aws_secret_access_key=secrets.s3_secret_key.get_secret_value(),
+                endpoint_url=config.s3.endpoint,
             ).__aenter__()  # запускаем как async context один раз
         return cls._client
 
@@ -60,7 +60,7 @@ class S3Storage:
             raise
 
     @classmethod
-    async def delete_pdf(cls, user_id: UUID, file_id: UUID):
+    async def delete_pdf(cls, user_id: UUID, file_id: UUID) -> None:
         key = f"{user_id}/{file_id}.pdf"
         client = await cls._get_client()
 

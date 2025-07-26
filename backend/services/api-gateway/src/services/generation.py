@@ -1,8 +1,10 @@
 from asyncio import TimeoutError as AsyncTimeoutError
 from asyncio import wait_for
+from builtins import anext
 from typing import AsyncIterator
 from uuid import UUID, uuid4
 
+from loguru import logger
 from shared_adapters.redis import RedisStreamClient
 from shared_models.generation.interface import (
     GenerationWorkerChunkResponse,
@@ -68,6 +70,7 @@ class GenerationService:
                 if response.is_final:
                     break
         except AsyncTimeoutError:
+            logger.warning("AsyncTimeoutError")
             return
 
     @classmethod
@@ -78,13 +81,10 @@ class GenerationService:
     ) -> AsyncIterator[GenerationWorkerChunkResponse]:
         """Фильтрует сообщения из Redis по user_id и history_id"""
 
-        async def _next():
-            async for msg in RedisStreamClient.listen():
-                return msg
-
         while True:
-            raw = await wait_for(
-                _next(), timeout=local_config.generation.wait_for_stream_timeout
+            raw: dict = await wait_for(
+                anext(RedisStreamClient.listen()),
+                timeout=local_config.generation.wait_for_stream_timeout,
             )
             response = GenerationWorkerChunkResponse.model_validate(raw)
 
