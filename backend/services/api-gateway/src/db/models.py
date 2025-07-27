@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 
 import sqlalchemy as db
 from pgvector.sqlalchemy import Vector
-from shared_config import config, timezone
+from shared_config import config
 from shared_models.user.persona import UserPersona
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
 from sqlalchemy.orm import DeclarativeBase, relationship
@@ -39,6 +39,12 @@ class DBUser(Base):
         JSONB, nullable=False, default=lambda: UserPersona().model_dump()
     )
 
+    created_at: datetime = db.Column(
+        db.DateTime,
+        nullable=False,
+        default=datetime.now(UTC).replace(tzinfo=None),
+    )
+
     cookie = relationship(
         "DBUserCookie", back_populates="user", uselist=False, lazy="selectin"
     )
@@ -72,6 +78,12 @@ class DBUserCookie(Base):
     id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = db.Column(UUID(as_uuid=True), db.ForeignKey("users.id"), nullable=False)
 
+    created_at: datetime = db.Column(
+        db.DateTime,
+        nullable=False,
+        default=datetime.now(UTC).replace(tzinfo=None),
+    )
+
     user = relationship("DBUser", back_populates="cookie", lazy="selectin")
 
 
@@ -79,11 +91,15 @@ class DBFileMeta(Base):
     __tablename__ = "file_meta"
 
     id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    file_id = db.Column(
-        UUID(as_uuid=True), unique=True, nullable=False, default=uuid.uuid4
-    )
+    file_id = db.Column(UUID(as_uuid=True), unique=True, nullable=False)
     filename = db.Column(db.String, nullable=False)
     is_indexed = db.Column(db.Boolean, default=False, nullable=False)
+
+    created_at: datetime = db.Column(
+        db.DateTime,
+        nullable=False,
+        default=datetime.now(UTC).replace(tzinfo=None),
+    )
 
     user_id = db.Column(UUID(as_uuid=True), db.ForeignKey("users.id"), nullable=False)
 
@@ -132,7 +148,7 @@ class DBMessage(Base):
     timestamp: datetime = db.Column(
         db.DateTime,
         nullable=False,
-        default=datetime.now(UTC).replace(tzinfo=timezone),
+        default=datetime.now(UTC).replace(tzinfo=None),
     )
 
     context = relationship(
@@ -167,7 +183,7 @@ class DBChunk(Base):
     created_at: datetime = db.Column(
         db.DateTime,
         nullable=False,
-        default=datetime.now(UTC).replace(tzinfo=timezone),
+        default=datetime.now(UTC).replace(tzinfo=None),
     )
 
     messages = relationship(

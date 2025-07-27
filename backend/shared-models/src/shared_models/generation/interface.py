@@ -9,7 +9,6 @@ from shared_models.worker.context import WorkerRequestContext
 
 class GenerationWorkerRequest(BaseModel):
     context: WorkerRequestContext
-    request_id: str
 
     history: list[ChatMessage]
     query: str
@@ -20,7 +19,6 @@ class GenerationWorkerRequest(BaseModel):
 
 class GenerationWorkerChunkResponse(BaseModel):
     context: WorkerRequestContext
-    request_id: str
 
     type: Literal["default", "error"] = "default"
     chunk: ChatCompletionResponse

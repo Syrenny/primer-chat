@@ -8,10 +8,10 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from loguru import logger
+from shared_kafka.base import BaseKafkaConsumer
 from src.api import completions_router, files_router
 from src.api.middleware import SessionMiddleware
 from src.config import config
-from src.consumers.base import BaseKafkaConsumer
 from src.consumers.indexation.response import IndexationResultConsumer
 from src.db.session import session_manager
 from src.exceptions.base import AppException
@@ -21,7 +21,8 @@ from src.kafka_init import init_kafka
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> Any:
     await to_thread.run_sync(init_kafka)
-    await session_manager.init_db()
+    await session_manager.init_db(run_migrations=True)
+
     consumers: list[BaseKafkaConsumer] = [IndexationResultConsumer()]
 
     logger.debug("Init consumers")

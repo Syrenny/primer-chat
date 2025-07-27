@@ -5,12 +5,12 @@ from typing import Iterable, List
 import fitz
 from loguru import logger
 from pydantic import ValidationError
+from shared_adapters.openai import Embeddings
 from shared_models.indexation.core import ChunkPosition, IndexationResult, IndexedChunk
 from shared_models.indexation.segmentation import LineSignature, StyleKey
 from shared_models.openai.completions import Usage
 from shared_models.openai.embeddings import EmbeddingsResponse, EmbeddingsUsage
-from shared_adapters.openai import Embeddings
-from src.config import config
+from src.config import config as local_config
 from src.services.segmentation import SegmentationService
 
 
@@ -87,15 +87,15 @@ class BatchEmbedder:
 
     def _validate_embeddings(self, response: EmbeddingsResponse) -> None:
         length = len(response.embeddings)
-        if length != config.embeddings_dimensions:
+        if length != local_config.embeddings_dimensions:
             raise ValidationError(
-                f"Invalid embeddings dimension. Expected {config.embeddings_dimensions}, got {length}"
+                f"Invalid embeddings dimension. Expected {local_config.embeddings_dimensions}, got {length}"
             )
 
     def _batch_chunks(self) -> Iterable[list[str]]:
         it = iter(self._buffered_texts)
         while True:
-            batch = list(islice(it, config.embeddings_batch_size))
+            batch = list(islice(it, local_config.embeddings_batch_size))
             if not batch:
                 break
             yield batch
@@ -127,7 +127,7 @@ class IndexationService:
     def batch_pages(self, pages: list[fitz.Page]) -> Iterable[list[LineSignature]]:
         it = iter(pages)
         while True:
-            batch = list(islice(it, config.pages_batch_size))
+            batch = list(islice(it, local_config.pages_batch_size))
             if not batch:
                 break
             yield FitzUtils.extract_lines(batch)

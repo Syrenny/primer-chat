@@ -39,7 +39,7 @@ async def consume() -> None:
                 request.query, request.history, request.persona
             ):
                 response = GenerationWorkerChunkResponse(
-                    request_id=request.request_id, chunk=chunk
+                    context=request.context, chunk=chunk
                 )
                 await producer.send_and_wait(
                     topic=config.kafka_response_topic,

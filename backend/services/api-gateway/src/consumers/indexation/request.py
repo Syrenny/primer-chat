@@ -1,6 +1,6 @@
+from shared_config import config
+from shared_kafka.base import BaseKafkaProducer
 from shared_models.indexation.interface import IndexationWorkerRequest
-from src.config import config
-from src.consumers.base import BaseKafkaProducer
 
 
 class IndexationProducer(BaseKafkaProducer):

@@ -17,7 +17,7 @@ def init_kafka() -> None:
             replication_factor=config.kafka.defaults.replication_factor,
         ),
         NewTopic(
-            name=config.kafka.generation.request.topic,
+            name=config.kafka.generation.topic,
             num_partitions=config.kafka.defaults.partitions,
             replication_factor=config.kafka.defaults.replication_factor,
         ),

@@ -26,7 +26,7 @@ class BaseKafkaProducer(ABC):
         if not self._producer._sender:  # продюсер не запущен
             raise RuntimeError("Kafka producer not started")
 
-        data = json.dumps(payload.model_dump()).encode("utf-8")
+        data = json.dumps(payload.model_dump_json()).encode("utf-8")
         logger.debug(f"Producing to {topic}: {payload}")
         await self._producer.send_and_wait(topic=topic, value=data)
 
@@ -67,6 +67,9 @@ class BaseKafkaConsumer(ABC):
             await self._task
         await self._consumer.stop()
         logger.debug(f"Kafka consumer for topic {self.topic} stopped")
+
+    async def wait_until_stopped(self):
+        await self._stopped.wait()
 
     async def _consume_loop(self):
         try:

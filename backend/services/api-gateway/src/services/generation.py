@@ -40,10 +40,10 @@ class GenerationService:
         request_id = uuid4()
         request = GenerationWorkerRequest(
             context=WorkerRequestContext(
+                request_id=request_id,
                 user_id=user_id,
                 history_id=history_id,
             ),
-            request_id=request_id,
             history=history,
             query=query,
             chunks=chunks,

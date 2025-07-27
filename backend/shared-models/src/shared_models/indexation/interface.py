@@ -9,7 +9,6 @@ class IndexationWorkerRequest(BaseModel):
 
 
 class IndexationWorkerResponse(BaseModel):
-    request_id: str
     context: WorkerRequestContext
     result: str | None = None
     error: str | None = None

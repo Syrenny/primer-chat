@@ -1,4 +1,5 @@
-from uuid import UUID
+from datetime import datetime
+from uuid import UUID, uuid4
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -23,10 +24,15 @@ class DaoFileMeta:
     @classmethod
     @transactional
     async def add_file_meta(
-        cls, session: AsyncSession, user_id: UUID, filename: str
+        cls,
+        session: AsyncSession,
+        user_id: UUID,
+        filename: str,
+        file_id: UUID = uuid4(),
     ) -> DBFileMeta:
         file_meta = DBFileMeta(
             user_id=user_id,
+            file_id=file_id,
             filename=filename,
         )
         session.add(file_meta)
@@ -54,7 +60,9 @@ class DaoFileMeta:
         user_id: UUID,
         file_id: UUID,
     ) -> None | DBFileMeta:
-        db_file_meta = await cls.get_file_meta(session, user_id, file_id)
+        db_file_meta = await cls.get_file_meta(
+            session=session, user_id=user_id, file_id=file_id
+        )
 
         if db_file_meta:
             await session.delete(db_file_meta)
@@ -93,3 +101,22 @@ class DaoFileMeta:
 
         db_file_meta.is_indexed = value
         return value
+
+    @classmethod
+    async def get_old_unindexed_files(
+        cls, session: AsyncSession, older_than: datetime
+    ) -> list[DBFileMeta]:
+        stmt = select(DBFileMeta).where(
+            not DBFileMeta.is_indexed, DBFileMeta.created_at < older_than
+        )
+        result = await session.execute(stmt)
+        return result.scalars().all()
+
+    @classmethod
+    @transactional
+    async def list_all_files(cls, session: AsyncSession) -> list[DBFileMeta]:
+        stmt = select(DBFileMeta)
+
+        result = await session.execute(stmt)
+
+        return result.scalars().all()

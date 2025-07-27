@@ -21,6 +21,7 @@ dependencies = [
     "pyyaml>=6.0.2",
     "shared-adapters",
     "shared-config",
+    "shared-kafka",
     "shared-models",
     "sqlalchemy>=2.0.41",
     "uvicorn>=0.35.0",
@@ -30,3 +31,4 @@ dependencies = [
 shared-config = { path = "../../shared-config", editable = true }
 shared-adapters = { path = "../../shared-adapters", editable = true }
 shared-models = { path = "../../shared-models", editable = true }
+shared-kafka = { path = "../../shared-kafka", editable = true }

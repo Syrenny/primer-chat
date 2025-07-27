@@ -1,8 +1,8 @@
-"""Initial schema with pgvector
+"""Create ivfflat index
 
-Revision ID: 13e82e809625
-Revises:
-Create Date: 2025-07-26 16:02:14.441246
+Revision ID: 25b03eaa899e
+Revises: 853ff77fa59b
+Create Date: 2025-07-27 15:00:24.533732
 
 """
 
@@ -12,15 +12,13 @@ from alembic import op
 from shared_config import config
 
 # revision identifiers, used by Alembic.
-revision: str = "13e82e809625"
-down_revision: Union[str, Sequence[str], None] = None
+revision: str = "25b03eaa899e"
+down_revision: Union[str, Sequence[str], None] = "853ff77fa59b"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.execute("CREATE EXTENSION IF NOT EXISTS vector")
-
     # embedding column (safety check внутри DO $$)
     op.execute(f"""
     DO $$
@@ -53,4 +51,3 @@ def upgrade() -> None:
 def downgrade() -> None:
     op.execute("DROP INDEX IF EXISTS chunks_embedding_idx")
     op.execute("ALTER TABLE chunks DROP COLUMN IF EXISTS embedding")
-    op.execute("DROP EXTENSION IF EXISTS vector")

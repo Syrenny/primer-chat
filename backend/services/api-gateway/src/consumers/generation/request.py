@@ -1,6 +1,6 @@
+from shared_kafka.base import BaseKafkaProducer
 from shared_models.generation.interface import GenerationWorkerRequest
 from src.config import config
-from src.consumers.base import BaseKafkaProducer
 
 
 class GenerationProducer(BaseKafkaProducer):

@@ -38,7 +38,7 @@ class Secrets(BaseSettings):
             username=self.postgres_user.get_secret_value(),
             password=self.postgres_password.get_secret_value(),
             host="localhost",
-            port=5000,
+            port=5432,
             path=self.postgres_db.get_secret_value(),
         )
 

@@ -427,6 +427,7 @@ dependencies = [
     { name = "scikit-learn" },
     { name = "shared-adapters" },
     { name = "shared-config" },
+    { name = "shared-kafka" },
     { name = "shared-models" },
 ]
 
@@ -447,6 +448,7 @@ requires-dist = [
     { name = "scikit-learn", specifier = ">=1.7.1" },
     { name = "shared-adapters", editable = "../../shared-adapters" },
     { name = "shared-config", editable = "../../shared-config" },
+    { name = "shared-kafka", editable = "../../shared-kafka" },
     { name = "shared-models", editable = "../../shared-models" },
 ]
 
@@ -1043,6 +1045,25 @@ requires-dist = [
     { name = "pydantic", specifier = ">=2.6" },
     { name = "pydantic-settings", specifier = ">=2.2" },
     { name = "pyyaml" },
+]
+
+[[package]]
+name = "shared-kafka"
+version = "0.1.0"
+source = { editable = "../../shared-kafka" }
+dependencies = [
+    { name = "aiokafka" },
+    { name = "loguru" },
+    { name = "pydantic" },
+    { name = "shared-config" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "aiokafka", specifier = ">=0.12.0" },
+    { name = "loguru", specifier = ">=0.7.3" },
+    { name = "pydantic", specifier = ">=2.11.7" },
+    { name = "shared-config", editable = "../../shared-config" },
 ]
 
 [[package]]

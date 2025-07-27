@@ -13,8 +13,8 @@ class Embeddings:
         self,
     ) -> None:
         self.throttler = Throttler(
-            rate_limit=config.embeddings_throttle_rate_limit,
-            period=config.embeddings_throttle_period,
+            rate_limit=config.embeddings.throttle_rate_limit,
+            period=config.embeddings.throttle_period,
         )
         self.client = openai.AsyncOpenAI(
             api_key=secrets.embeddings_key.get_secret_value()
@@ -26,9 +26,9 @@ class Embeddings:
     async def embed(self, texts: List[str]) -> EmbeddingsResponse:
         async with self.throttler:
             response = await self.client.embeddings.create(
-                model=config.embeddings_model,
+                model=config.embeddings.model,
                 input=texts,
-                dimensions=config.embeddings_dimensions,
+                dimensions=config.embeddings.dimensions,
             )
         return EmbeddingsResponse.model_validate(response.model_dump())
 
@@ -39,12 +39,12 @@ class Embeddings:
 class OpenAICompletionsGenerator:
     def __init__(self) -> None:
         self.throttler = Throttler(
-            rate_limit=config.openai_throttle_rate_limit,
-            period=config.openai_throttle_period,
+            rate_limit=config.openai.throttle_rate_limit,
+            period=config.openai.throttle_period,
         )
         self.client = openai.AsyncOpenAI(
             api_key=secrets.openai_key.get_secret_value(),
-            base_url=config.openai_base_url,
+            base_url=config.openai.base_url,
         )
 
     @backoff.on_exception(
@@ -55,11 +55,11 @@ class OpenAICompletionsGenerator:
     ) -> AsyncIterator[ChatCompletionResponse]:
         async with self.throttler:
             generator = await self.client.chat.completions.create(
-                model=config.openai_model,
+                model=config.openai.model,
                 messages=[system_prompt] + history + [query],
                 stream=True,
-                temperature=config.openai_temperature,
-                max_tokens=config.openai_max_tokens,
+                temperature=config.openai.temperature,
+                max_tokens=config.openai.max_tokens,
             )
 
             async for chunk in generator:
@@ -69,12 +69,12 @@ class OpenAICompletionsGenerator:
 class OpenAIFullCompletions:
     def __init__(self) -> None:
         self.throttler = Throttler(
-            rate_limit=config.openai_throttle_rate_limit,
-            period=config.openai_throttle_period,
+            rate_limit=config.openai.throttle_rate_limit,
+            period=config.openai.throttle_period,
         )
         self.client = openai.AsyncOpenAI(
             api_key=secrets.openai_key.get_secret_value(),
-            base_url=config.openai_base_url,
+            base_url=config.openai.base_url,
         )
 
     @backoff.on_exception(
@@ -88,11 +88,11 @@ class OpenAIFullCompletions:
     ) -> ChatCompletionResponse:
         async with self.throttler:
             response = await self.client.chat.completions.create(
-                model=config.openai_model,
+                model=config.openai.model,
                 messages=[system_prompt] + (history or []) + ([query] if query else []),
                 stream=False,
-                temperature=config.openai_temperature,
-                max_tokens=config.openai_max_tokens,
+                temperature=config.openai.temperature,
+                max_tokens=config.openai.max_tokens,
             )
 
         return ChatCompletionResponse.model_validate(response.model_dump())

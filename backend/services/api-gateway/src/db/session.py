@@ -36,7 +36,7 @@ class DatabaseSessionManager:
             raise NotInitializedError("Sessionmaker is not initialized.")
         return self._sessionmaker
 
-    async def init_db(self) -> None:
+    async def init_db(self, run_migrations: bool = False) -> None:
         self._engine = create_async_engine(
             str(secrets.sqlalchemy_url),
             pool_pre_ping=True,
@@ -49,9 +49,10 @@ class DatabaseSessionManager:
             class_=AsyncSession,
         )
 
-        await to_thread.run_sync(self._run_migrations)
+        if run_migrations:
+            await to_thread.run_sync(self._run_migrations)
 
-        logger.debug("Migration end")
+            logger.debug("Migration end")
 
     def _run_migrations(self) -> None:
         alembic_cfg = Config("alembic.ini")

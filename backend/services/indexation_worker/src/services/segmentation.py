@@ -4,15 +4,15 @@ import re
 from typing import List, get_args
 
 from shared_adapters.openai import OpenAIFullCompletions
-from src.config import config
-from src.exceptions import ResponseParsingError
-from shared_models.openai.completions import ChatMessage, Usage
 from shared_models.indexation.segmentation import (
     HTMLTag,
     LineSignature,
     ResultChunk,
     SegmentationResult,
 )
+from shared_models.openai.completions import ChatMessage, Usage
+from src.config import config
+from src.exceptions import ResponseParsingError
 from src.prompts.render import render_prompt
 
 semaphore = asyncio.Semaphore(config.max_concurrent_segments)
@@ -48,9 +48,7 @@ class SegmentationService:
     ) -> tuple[SegmentationResult, Usage]:
         system_prompt = self._build_system_prompt(lines)
 
-        params = {
-            "system_prompt": system_prompt,
-        }
+        params = {"system_prompt": system_prompt, "query": None, "history": None}
 
         response = await self.completions.create(**params)
 

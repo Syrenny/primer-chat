@@ -1,7 +1,8 @@
 from typing import AsyncIterator, Sequence
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from fastapi import UploadFile
+from loguru import logger
 from shared_adapters.s3 import S3Storage
 from shared_models.indexation.interface import IndexationWorkerRequest
 from shared_models.worker.context import WorkerRequestContext
@@ -62,15 +63,39 @@ class FileProcessor:
         await cls._validate_limits(session, user_id)
 
         content = await cls._read_file(upload_file)
-        db_meta = await cls._store_metadata(session, user_id, upload_file.filename)
-        s3_link = await cls._upload_to_storage(user_id, db_meta.file_id, content)
-        await cls._enqueue_indexation(s3_link, user_id=user_id, file_id=db_meta.file_id)
+
+        file_id = uuid4()
+
+        try:
+            s3_link = await cls._upload_to_storage(user_id, file_id, content)
+
+            db_meta = await cls._store_metadata(
+                session=session,
+                user_id=user_id,
+                filename=upload_file.filename,
+                file_id=file_id,
+            )
+        except Exception as err:
+            await FileProcessor.delete(
+                file_id=file_id, session=session, user_id=user_id
+            )
+            logger.exception(str(err))
+            raise err
+
+        try:
+            await cls._enqueue_indexation(
+                s3_link, user_id=user_id, file_id=db_meta.file_id
+            )
+        except Exception as err:
+            await FileProcessor.delete(
+                file_id=file_id, session=session, user_id=user_id
+            )
+            raise err
 
         return FileMeta(
             file_id=db_meta.file_id,
             filename=db_meta.filename,
             is_indexed=False,
-            s3_link=s3_link,
         )
 
     @staticmethod
@@ -86,10 +111,10 @@ class FileProcessor:
 
     @staticmethod
     async def _store_metadata(
-        session: AsyncSession, user_id: UUID, filename: str
+        session: AsyncSession, user_id: UUID, file_id: UUID, filename: str
     ) -> DBFileMeta:
         return await DaoFileMeta.add_file_meta(
-            session=session, user_id=user_id, filename=filename
+            session=session, user_id=user_id, filename=filename, file_id=file_id
         )
 
     @staticmethod
@@ -100,21 +125,21 @@ class FileProcessor:
 
     @staticmethod
     async def _enqueue_indexation(s3_link: str, user_id: UUID, file_id: UUID) -> None:
-        context = WorkerRequestContext(user_id=user_id, file_id=file_id)
+        request_id = uuid4()
+        context = WorkerRequestContext(
+            request_id=request_id, user_id=user_id, file_id=file_id
+        )
         request = IndexationWorkerRequest(s3_link=s3_link, context=context)
+
         async with IndexationProducer() as producer:
             await producer.send(request)
 
     @classmethod
-    async def delete(
-        cls, file_id: UUID, session: AsyncSession, user_id: UUID
-    ) -> FileMeta | None:
-        file_meta = await DaoFileMeta.delete_file_meta(
+    async def delete(cls, file_id: UUID, session: AsyncSession, user_id: UUID) -> None:
+        await DaoFileMeta.delete_file_meta(
             session=session, user_id=user_id, file_id=file_id
         )
-        if file_meta:
-            await S3Storage.delete_pdf(user_id=user_id, file_id=file_id)
-        return file_meta
+        await S3Storage.delete_pdf(user_id=user_id, file_id=file_id)
 
 
 class FileService:
@@ -129,10 +154,8 @@ class FileService:
     @classmethod
     async def delete_file(
         cls, file_id: UUID, session: AsyncSession, user_id: UUID
-    ) -> FileMeta | None:
-        return await FileProcessor.delete(
-            file_id=file_id, session=session, user_id=user_id
-        )
+    ) -> None:
+        await FileProcessor.delete(file_id=file_id, session=session, user_id=user_id)
 
     @classmethod
     async def set_is_indexed(

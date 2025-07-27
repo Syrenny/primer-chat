@@ -95,4 +95,4 @@ async def list_files(
 ) -> list[FileMeta]:
     result = await DaoFileMeta.list_file_meta(session=session, user_id=user_id)
 
-    return result
+    return FileMeta.from_db(result)
