@@ -39,7 +39,7 @@ class IndexationResultConsumer(BaseKafkaConsumer):
                 await ChunkService.save_chunks(
                     file_id=data.context.file_id,
                     user_id=data.context.user_id,
-                    chunks=data.chunks,
+                    chunks=data.result.chunks,
                     session=session,
                 )
 

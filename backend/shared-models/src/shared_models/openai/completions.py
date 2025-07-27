@@ -1,21 +1,27 @@
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ChatMessage(BaseModel):
+    model_config = ConfigDict(strict=True)
+
     role: Literal["system", "user", "assistant", "function"]
     content: str
     name: str | None = None
 
 
 class Choice(BaseModel):
+    model_config = ConfigDict(strict=True)
+
     index: int
     message: ChatMessage
     finish_reason: str | None
 
 
 class Usage(BaseModel):
+    model_config = ConfigDict(strict=True)
+
     prompt_tokens: int = 0
     completion_tokens: int = 0
     total_tokens: int = 0
@@ -28,6 +34,8 @@ class Usage(BaseModel):
 
 
 class ChatCompletionResponse(BaseModel):
+    model_config = ConfigDict(strict=True)
+
     index: str = Field(alias="id")
     object: str
     created: int

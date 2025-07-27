@@ -1,6 +1,6 @@
 from typing import Any, Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from shared_models.openai.completions import ChatCompletionResponse, ChatMessage
 from shared_models.user.persona import UserPersona
@@ -8,6 +8,8 @@ from shared_models.worker.context import WorkerRequestContext
 
 
 class GenerationWorkerRequest(BaseModel):
+    model_config = ConfigDict(strict=True)
+
     context: WorkerRequestContext
 
     history: list[ChatMessage]
@@ -18,6 +20,8 @@ class GenerationWorkerRequest(BaseModel):
 
 
 class GenerationWorkerChunkResponse(BaseModel):
+    model_config = ConfigDict(strict=True)
+
     context: WorkerRequestContext
 
     type: Literal["default", "error"] = "default"

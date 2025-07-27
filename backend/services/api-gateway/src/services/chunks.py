@@ -25,7 +25,7 @@ class ChunkService:
         embeddings_client = get_embeddings()
 
         contents = [chunk.content for chunk in chunks]
-        embeddings = embeddings_client.embed(contents)
+        embeddings = await embeddings_client.embed(contents)
 
         await DaoChunks.save_file_chunks(
             session=session,

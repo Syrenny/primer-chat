@@ -1,15 +1,19 @@
 from typing import List, Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class EmbeddingsData(BaseModel):
+    model_config = ConfigDict(strict=True)
+
     index: int
     embedding: List[float]
     object: Literal["embedding"] = "embedding"
 
 
 class EmbeddingsUsage(BaseModel):
+    model_config = ConfigDict(strict=True)
+
     prompt_tokens: int = 0
     total_tokens: int = 0
 
@@ -20,6 +24,8 @@ class EmbeddingsUsage(BaseModel):
 
 
 class EmbeddingsResponse(BaseModel):
+    model_config = ConfigDict(strict=True)
+
     object: Literal["list"] = "list"
     data: List[EmbeddingsData]
     model: str

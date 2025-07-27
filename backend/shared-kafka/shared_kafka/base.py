@@ -68,10 +68,10 @@ class BaseKafkaConsumer(ABC):
         await self._consumer.stop()
         logger.debug(f"Kafka consumer for topic {self.topic} stopped")
 
-    async def wait_until_stopped(self):
+    async def wait_until_stopped(self) -> None:
         await self._stopped.wait()
 
-    async def _consume_loop(self):
+    async def _consume_loop(self) -> None:
         try:
             while not self._stopped.is_set():
                 result = await self._consumer.getmany(timeout_ms=1000)
@@ -88,7 +88,7 @@ class BaseKafkaConsumer(ABC):
             logger.exception("Unexpected error in Kafka consumer")
 
     @abstractmethod
-    async def handle_message(self, payload: dict):
+    async def handle_message(self, payload: dict) -> None:
         """Process one message from Kafka"""
         raise NotImplementedError
 

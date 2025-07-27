@@ -9,4 +9,4 @@ class WorkerRequestContext(BaseModel):
     file_id: UUID | None = None
     history_id: UUID | None = None
 
-    model_config = ConfigDict(json_encoders={UUID: str})
+    model_config = ConfigDict(strict=True, json_encoders={UUID: str})

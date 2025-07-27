@@ -4,8 +4,8 @@ from typing import Iterable, List
 
 import fitz
 from loguru import logger
-from pydantic import ValidationError
 from shared_adapters.openai import Embeddings
+from shared_config import config as global_config
 from shared_models.indexation.core import ChunkPosition, IndexationResult, IndexedChunk
 from shared_models.indexation.segmentation import LineSignature, StyleKey
 from shared_models.openai.completions import Usage
@@ -86,11 +86,11 @@ class BatchEmbedder:
         self._buffered_texts.append(content)
 
     def _validate_embeddings(self, response: EmbeddingsResponse) -> None:
-        length = len(response.embeddings)
-        if length != local_config.embeddings_dimensions:
-            raise ValidationError(
-                f"Invalid embeddings dimension. Expected {local_config.embeddings_dimensions}, got {length}"
-            )
+        for emb in response.embeddings:
+            if len(emb) != global_config.embeddings.dimensions:
+                raise ValueError(
+                    f"Embedding has invalid dimension. Expected {global_config.embeddings.dimensions}, got {len(emb)}"
+                )
 
     def _batch_chunks(self) -> Iterable[list[str]]:
         it = iter(self._buffered_texts)
@@ -101,16 +101,25 @@ class BatchEmbedder:
             yield batch
 
     async def compute(self) -> list[list[float]]:
-        self.flush()
         batches = list(self._batch_chunks())
+
+        self.flush()
+
+        if not batches:
+            return []
 
         tasks = [self.embeddings.embed(batch) for batch in batches]
 
         result: list[list[float]] = []
-        for embeddings_result in await asyncio.gather(*tasks):
-            self._validate_embeddings(embeddings_result)
-            result += embeddings_result.embeddings
-            self.embeddings_usage += embeddings_result.usage
+        responses = await asyncio.gather(*tasks, return_exceptions=True)
+
+        for batch, response in zip(batches, responses):
+            if isinstance(response, Exception):
+                logger.error(f"❌ Ошибка при эмбеддинге. Batch: {batch}")
+                raise RuntimeError(f"Embedding failed: {response}")
+            self._validate_embeddings(response)
+            result.extend(response.embeddings)
+            self.embeddings_usage += response.usage
 
         return result
 
