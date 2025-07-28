@@ -10,7 +10,7 @@ class UserContext(BaseModel):
 
 
 class CookieData(BaseModel):
-    id: UUID
+    cookie_id: UUID
     user_id: UUID = Field(default_factory=uuid4)
 
     model_config = ConfigDict(json_encoders={UUID: str})

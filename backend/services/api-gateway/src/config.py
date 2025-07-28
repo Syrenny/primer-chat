@@ -11,9 +11,14 @@ class UvicornConfig(BaseModel):
 
 
 class GenerationConfig(BaseModel):
-    wait_for_stream_timeout: int
+    listen_timeout_seconds: int
+    listen_max_attempts: int
 
     max_len_history: int
+
+
+class RetrieverConfig(BaseModel):
+    max_chunks_per_file: int
 
 
 class Config(BaseModel):
@@ -27,6 +32,8 @@ class Config(BaseModel):
     uvicorn: UvicornConfig
 
     generation: GenerationConfig
+
+    retriever: RetrieverConfig
 
 
 def load_config(env: str) -> Config:

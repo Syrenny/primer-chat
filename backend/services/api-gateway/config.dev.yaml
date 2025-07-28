@@ -14,5 +14,9 @@ uvicorn:
     reload: true
 
 generation:
-    wait_for_stream_timeout: 5
+    listen_timeout_seconds: 5
+    listen_max_attempts: 100
     max_len_history: 10
+
+retriever:
+    max_chunks_per_file: 3

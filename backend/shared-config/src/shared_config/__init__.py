@@ -75,15 +75,30 @@ class S3Config(BaseModel):
     service_name: str
     region: str
     endpoint: str
-    bucket: str
+    pdf_bucket: str
+    chunks_bucket: str
     presign_expire_seconds: int
 
 
-class RedisConfig(BaseModel):
+class RedisConnectionConfig(BaseModel):
     host: str
     port: int
     db: int
-    stream_key: str
+
+
+class RedisStreamConfig(BaseModel):
+    key: str
+
+
+class RedisActiveHistoryConfig(BaseModel):
+    key_prefix: str
+    ttl_seconds: int
+
+
+class RedisConfig(BaseModel):
+    connection: RedisConnectionConfig
+    stream: RedisStreamConfig
+    active_history: RedisActiveHistoryConfig
 
 
 class OpenAIConfig(BaseModel):
@@ -111,6 +126,8 @@ class Config(BaseModel):
     kafka: KafkaConfig
 
     s3: S3Config
+
+    redis: RedisConfig
 
 
 def load_config(env: str) -> Config:

@@ -14,7 +14,9 @@ dependencies = [
     "pydantic-settings>=2.10.1",
     "pyyaml>=6.0.2",
     "shared-adapters",
+    "shared-kafka",
 ]
 
 [tool.uv.sources]
 shared-adapters = { path = "../../shared-adapters", editable = true }
+shared-kafka = { path = "../../shared-kafka", editable = true }

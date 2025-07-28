@@ -1,14 +1,17 @@
+import gzip
+import json
 from uuid import UUID
 
 import aioboto3
 import aiohttp
 from loguru import logger
 from shared_config import config, secrets
+from shared_models.indexation.core import IndexationResult
 
 
 class S3Storage:
     @staticmethod
-    def _build_key(user_id: UUID, file_id: UUID) -> str:
+    def _build_pdf_key(user_id: UUID, file_id: UUID) -> str:
         return f"{user_id}/{file_id}.pdf"
 
     @staticmethod
@@ -23,11 +26,11 @@ class S3Storage:
 
     @classmethod
     async def upload_pdf(cls, user_id: UUID, file_id: UUID, content: bytes) -> str:
-        key = cls._build_key(user_id, file_id)
+        key = cls._build_pdf_key(user_id, file_id)
 
         async with cls._create_session() as client:
             await client.put_object(
-                Bucket=config.s3.bucket,
+                Bucket=config.s3.pdf_bucket,
                 Key=key,
                 Body=content,
                 ContentType="application/pdf",
@@ -37,7 +40,7 @@ class S3Storage:
 
             url = await client.generate_presigned_url(
                 ClientMethod="get_object",
-                Params={"Bucket": config.s3.bucket, "Key": key},
+                Params={"Bucket": config.s3.pdf_bucket, "Key": key},
                 ExpiresIn=config.s3.presign_expire_seconds,
             )
 
@@ -45,11 +48,11 @@ class S3Storage:
 
     @classmethod
     async def delete_pdf(cls, user_id: UUID, file_id: UUID) -> None:
-        key = cls._build_key(user_id, file_id)
+        key = cls._build_pdf_key(user_id, file_id)
 
         try:
             async with cls._create_session() as client:
-                await client.delete_object(Bucket=config.s3.bucket, Key=key)
+                await client.delete_object(Bucket=config.s3.pdf_bucket, Key=key)
                 logger.debug(f"🗑️ Deleted file from S3: {key}")
         except Exception:
             logger.exception(f"❌ Failed to delete file from S3: {key}")
@@ -57,12 +60,12 @@ class S3Storage:
 
     @classmethod
     async def generate_presigned_url(cls, user_id: UUID, file_id: UUID) -> str:
-        key = cls._build_key(user_id, file_id)
+        key = cls._build_pdf_key(user_id, file_id)
 
         async with cls._create_session() as client:
             return await client.generate_presigned_url(
                 ClientMethod="get_object",
-                Params={"Bucket": config.s3.bucket, "Key": key},
+                Params={"Bucket": config.s3.pdf_bucket, "Key": key},
                 ExpiresIn=config.s3.presign_expire_seconds,
             )
 
@@ -78,4 +81,51 @@ class S3Storage:
                     return await response.read()
         except Exception:
             logger.exception(f"Не удалось получить PDF по ссылке: {s3_link}")
+            raise
+
+    @staticmethod
+    def _build_chunks_key(user_id: UUID, file_id: UUID) -> str:
+        return f"{user_id}/{file_id}.chunks.json.gz"
+
+    @classmethod
+    async def upload_chunks(
+        cls, user_id: UUID, file_id: UUID, result: IndexationResult
+    ) -> None:
+        key = cls._build_chunks_key(user_id, file_id)
+
+        serialized = result.model_dump_json()
+        compressed = gzip.compress(serialized.encode("utf-8"))
+
+        async with cls._create_session() as client:
+            await client.put_object(
+                Bucket=config.s3.chunks_bucket,
+                Key=key,
+                Body=compressed,
+                ContentType="application/json",
+                ContentEncoding="gzip",
+            )
+            logger.debug(f"✅ Uploaded chunks to S3: {key}")
+
+    @classmethod
+    async def download_chunks(cls, user_id: UUID, file_id: UUID) -> IndexationResult:
+        key = cls._build_chunks_key(user_id, file_id)
+
+        async with cls._create_session() as client:
+            response = await client.get_object(Bucket=config.s3.chunks_bucket, Key=key)
+            raw = await response["Body"].read()
+            decompressed = gzip.decompress(raw).decode("utf-8")
+            data = json.loads(decompressed)
+
+            return IndexationResult.model_validate(data)
+
+    @classmethod
+    async def delete_chunks(cls, user_id: UUID, file_id: UUID) -> None:
+        key = cls._build_chunks_key(user_id, file_id)
+
+        try:
+            async with cls._create_session() as client:
+                await client.delete_object(Bucket=config.s3.chunks_bucket, Key=key)
+                logger.debug(f"🗑️ Deleted chunks from S3: {key}")
+        except Exception:
+            logger.exception(f"❌ Failed to delete chunks from S3: {key}")
             raise

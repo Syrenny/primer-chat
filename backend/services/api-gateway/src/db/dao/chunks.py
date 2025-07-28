@@ -15,7 +15,6 @@ class DaoChunks:
         session: AsyncSession,
         user_id: UUID,
         file_id: UUID,
-        embeddings: list[list[float]],
         chunks: list[IndexedChunk],
     ) -> None:
         """Сохраняет чанки в БД."""
@@ -24,13 +23,13 @@ class DaoChunks:
                 user_id=user_id,
                 file_id=file_id,
                 content=chunk.content,
-                embedding=embedding,
+                embedding=chunk.embedding,
                 html_tag=chunk.html_tag,
                 xyxy=chunk.position.xyxy,
                 start_line=chunk.position.start_line,
                 end_line=chunk.position.end_line,
             )
-            for chunk, embedding in zip(chunks, embeddings)
+            for chunk in chunks
         ]
         session.add_all(chunk_objects)
 
@@ -42,7 +41,7 @@ class DaoChunks:
         user_id: UUID,
         file_id: UUID,
         query_embedding: list[float],
-        limit: int = 5,
+        limit: int,
     ) -> list[DBChunk]:
         """Ищет чанки с помощью pgvector."""
         result = await session.execute(

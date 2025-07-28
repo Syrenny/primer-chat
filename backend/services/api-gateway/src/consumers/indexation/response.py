@@ -1,5 +1,6 @@
 from loguru import logger
 from pydantic import ValidationError
+from shared_adapters.s3 import S3Storage
 from shared_config import config
 from shared_kafka.base import BaseKafkaConsumer
 from shared_models.indexation.interface import IndexationWorkerResponse
@@ -35,11 +36,15 @@ class IndexationResultConsumer(BaseKafkaConsumer):
             return
 
         try:
+            indexation_result = await S3Storage.download_chunks(
+                user_id=data.context.user_id, file_id=data.context.file_id
+            )
+
             async with session_manager.session() as session:
                 await ChunkService.save_chunks(
                     file_id=data.context.file_id,
                     user_id=data.context.user_id,
-                    chunks=data.result.chunks,
+                    chunks=indexation_result.chunks,
                     session=session,
                 )
 

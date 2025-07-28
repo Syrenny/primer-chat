@@ -22,17 +22,11 @@ class ChunkService:
         session: AsyncSession,
         chunks: list[IndexedChunk],
     ) -> None:
-        embeddings_client = get_embeddings()
-
-        contents = [chunk.content for chunk in chunks]
-        embeddings = await embeddings_client.embed(contents)
-
         await DaoChunks.save_file_chunks(
             session=session,
             user_id=user_id,
             file_id=file_id,
             chunks=chunks,
-            embeddings=embeddings,
         )
 
     @classmethod
@@ -53,7 +47,7 @@ class ChunkService:
 
     @classmethod
     async def find_chunks(
-        cls, user_id: UUID, file_id: UUID, session: AsyncSession, query: str
+        cls, user_id: UUID, file_id: UUID, session: AsyncSession, query: str, limit: int
     ) -> list[IndexedChunk]:
         embeddings_client = get_embeddings()
 
@@ -64,6 +58,7 @@ class ChunkService:
             user_id=user_id,
             file_id=file_id,
             query_embedding=query_embedding,
+            limit=limit,
         )
 
         return cls.from_db_chunks(db_chunks)

@@ -1,6 +1,5 @@
 from pydantic import BaseModel, ConfigDict
 
-from shared_models.indexation.core import IndexationResult
 from shared_models.worker.context import WorkerRequestContext
 
 
@@ -15,5 +14,4 @@ class IndexationWorkerResponse(BaseModel):
     model_config = ConfigDict(strict=True)
 
     context: WorkerRequestContext
-    result: IndexationResult | None = None
     error: str | None = None

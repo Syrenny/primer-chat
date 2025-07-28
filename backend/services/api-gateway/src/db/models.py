@@ -9,6 +9,10 @@ from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
 from sqlalchemy.orm import DeclarativeBase, relationship
 
 
+def utcnow():
+    return datetime.now(UTC)
+
+
 class Base(DeclarativeBase):
     __abstract__ = True
 
@@ -25,7 +29,7 @@ history_file_association = db.Table(
     db.Column(
         "file_id",
         UUID(as_uuid=True),
-        db.ForeignKey("file_meta.file_id"),
+        db.ForeignKey("file_meta.id"),
         primary_key=True,
     ),
 )
@@ -38,34 +42,28 @@ class DBUser(Base):
     persona = db.Column(
         JSONB, nullable=False, default=lambda: UserPersona().model_dump()
     )
-
     created_at: datetime = db.Column(
-        db.DateTime,
+        db.DateTime(timezone=True),
         nullable=False,
-        default=datetime.now(UTC).replace(tzinfo=None),
+        default=utcnow,
     )
 
+    # Cookie
     cookie = relationship(
         "DBUserCookie", back_populates="user", uselist=False, lazy="selectin"
     )
-    files_meta = relationship(
+
+    # Files
+    files = relationship(
         "DBFileMeta",
         back_populates="user",
         cascade="all, delete-orphan",
         lazy="selectin",
     )
+
+    # Histories
     histories = relationship(
         "DBHistoryMeta",
-        back_populates="user",
-        cascade="all, delete-orphan",
-        lazy="selectin",
-    )
-
-    chunks = relationship(
-        "DBChunk", back_populates="user", cascade="all, delete-orphan", lazy="selectin"
-    )
-    messages = relationship(
-        "DBMessage",
         back_populates="user",
         cascade="all, delete-orphan",
         lazy="selectin",
@@ -76,14 +74,15 @@ class DBUserCookie(Base):
     __tablename__ = "cookies"
 
     id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = db.Column(UUID(as_uuid=True), db.ForeignKey("users.id"), nullable=False)
 
     created_at: datetime = db.Column(
-        db.DateTime,
+        db.DateTime(timezone=True),
         nullable=False,
-        default=datetime.now(UTC).replace(tzinfo=None),
+        default=utcnow,
     )
 
+    # User
+    user_id = db.Column(UUID(as_uuid=True), db.ForeignKey("users.id"), nullable=False)
     user = relationship("DBUser", back_populates="cookie", lazy="selectin")
 
 
@@ -91,44 +90,26 @@ class DBFileMeta(Base):
     __tablename__ = "file_meta"
 
     id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    file_id = db.Column(UUID(as_uuid=True), unique=True, nullable=False)
     filename = db.Column(db.String, nullable=False)
     is_indexed = db.Column(db.Boolean, default=False, nullable=False)
 
     created_at: datetime = db.Column(
-        db.DateTime,
+        db.DateTime(timezone=True),
         nullable=False,
-        default=datetime.now(UTC).replace(tzinfo=None),
+        default=utcnow,
     )
 
+    # User
     user_id = db.Column(UUID(as_uuid=True), db.ForeignKey("users.id"), nullable=False)
+    user = relationship("DBUser", back_populates="files", lazy="selectin")
 
-    user = relationship("DBUser", back_populates="files_meta", lazy="selectin")
+    # Chunks
     chunks = relationship(
         "DBChunk",
-        back_populates="file_meta",
+        back_populates="file",
         cascade="all, delete-orphan",
         lazy="selectin",
     )
-    histories = relationship(
-        "DBHistoryMeta",
-        secondary=history_file_association,
-        back_populates="files",
-        lazy="selectin",
-    )
-
-
-# Association table for many-to-many between messages and chunks
-message_chunk_association = db.Table(
-    "message_chunk_association",
-    Base.metadata,
-    db.Column(
-        "message_id", UUID(as_uuid=True), db.ForeignKey("messages.id"), primary_key=True
-    ),
-    db.Column(
-        "chunk_id", UUID(as_uuid=True), db.ForeignKey("chunks.id"), primary_key=True
-    ),
-)
 
 
 class DBMessage(Base):
@@ -137,30 +118,24 @@ class DBMessage(Base):
     id: uuid.UUID = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     is_user_message: bool = db.Column(db.Boolean, nullable=False)
     content: str = db.Column(db.Text, nullable=False)
+    timestamp: datetime = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+    )
 
+    # History
     history_id = db.Column(
         UUID(as_uuid=True), db.ForeignKey("history_meta.id"), nullable=False
     )
+    history_meta = relationship(
+        "DBHistoryMeta", back_populates="messages", lazy="selectin"
+    )
+
+    # User
     user_id: uuid.UUID = db.Column(
         UUID(as_uuid=True), db.ForeignKey("users.id"), nullable=False
     )
-
-    timestamp: datetime = db.Column(
-        db.DateTime,
-        nullable=False,
-        default=datetime.now(UTC).replace(tzinfo=None),
-    )
-
-    context = relationship(
-        "DBChunk",
-        secondary=message_chunk_association,
-        back_populates="messages",
-        cascade="all, delete",
-    )
-
-    history = relationship("DBHistoryMeta", back_populates="messages", lazy="selectin")
-
-    user = relationship("DBUser", back_populates="messages")
 
 
 class DBChunk(Base):
@@ -173,27 +148,22 @@ class DBChunk(Base):
     xyxy = db.Column(ARRAY(db.Float), nullable=False)
     start_line = db.Column(db.Integer, nullable=False)
     end_line = db.Column(db.Integer, nullable=False)
+    created_at: datetime = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+    )
 
+    # User
     user_id: uuid.UUID = db.Column(
         UUID(as_uuid=True), db.ForeignKey("users.id"), nullable=False
     )
-    file_id: uuid.UUID = db.Column(
-        UUID(as_uuid=True), db.ForeignKey("file_meta.file_id"), nullable=False
-    )
-    created_at: datetime = db.Column(
-        db.DateTime,
-        nullable=False,
-        default=datetime.now(UTC).replace(tzinfo=None),
-    )
 
-    messages = relationship(
-        "DBMessage",
-        secondary=message_chunk_association,
-        back_populates="context",
-        cascade="all, delete",
+    # File
+    file_id: uuid.UUID = db.Column(
+        UUID(as_uuid=True), db.ForeignKey("file_meta.id"), nullable=False
     )
-    file_meta = relationship("DBFileMeta", back_populates="chunks")
-    user = relationship("DBUser", back_populates="chunks")
+    file = relationship("DBFileMeta", back_populates="chunks", lazy="selectin")
 
 
 class DBHistoryMeta(Base):
@@ -203,19 +173,21 @@ class DBHistoryMeta(Base):
     summary: str = db.Column(db.Text, nullable=True)
     summary_index: int = db.Column(db.Integer, nullable=True)
 
+    # User
     user_id = db.Column(UUID(as_uuid=True), db.ForeignKey("users.id"), nullable=False)
-
     user = relationship("DBUser", back_populates="histories", lazy="selectin")
+
+    # Messages
     messages = relationship(
         "DBMessage",
-        back_populates="history",
+        back_populates="history_meta",
         cascade="all, delete-orphan",
         lazy="selectin",
     )
 
+    # Files
     files = relationship(
         "DBFileMeta",
         secondary=history_file_association,
-        back_populates="histories",
         lazy="selectin",
     )

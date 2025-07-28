@@ -2,7 +2,8 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from src.db.models import DBHistoryMeta
+from sqlalchemy.orm import selectinload
+from src.db.models import DBFileMeta, DBHistoryMeta
 from src.db.wrap import transactional
 
 
@@ -12,8 +13,16 @@ class DaoHistoryMeta:
     async def list_history_meta(
         cls, session: AsyncSession, user_id: UUID
     ) -> list[DBHistoryMeta]:
-        stmt = select(DBHistoryMeta).filter(
-            DBHistoryMeta.user_id == user_id,
+        stmt = (
+            select(DBHistoryMeta)
+            .filter(
+                DBHistoryMeta.user_id == user_id,
+            )
+            .options(
+                selectinload(DBHistoryMeta.files),
+                selectinload(DBHistoryMeta.user),
+                selectinload(DBHistoryMeta.messages),
+            )
         )
 
         result = await session.execute(stmt)
@@ -30,14 +39,21 @@ class DaoHistoryMeta:
     @classmethod
     @transactional
     async def add_history_meta(
-        cls, session: AsyncSession, user_id: UUID, summary: str, summary_index: int
+        cls,
+        session: AsyncSession,
+        user_id: UUID,
+        summary: str,
+        summary_index: int = 0,
+        files: list[DBFileMeta] | None = None,
     ) -> DBHistoryMeta:
-        file_meta = DBHistoryMeta(
+        db_history_meta = DBHistoryMeta(
             user_id=user_id, summary=summary, summary_index=summary_index
         )
-        session.add(file_meta)
+        if files:
+            db_history_meta.extend(files)
+        session.add(db_history_meta)
 
-        return file_meta
+        return db_history_meta
 
     @classmethod
     @transactional
@@ -47,8 +63,14 @@ class DaoHistoryMeta:
         user_id: UUID,
         history_id: UUID,
     ) -> DBHistoryMeta | None:
-        stmt = select(DBHistoryMeta).filter(
-            DBHistoryMeta.user_id == user_id, DBHistoryMeta.history_id == history_id
+        stmt = (
+            select(DBHistoryMeta)
+            .filter(DBHistoryMeta.user_id == user_id, DBHistoryMeta.id == history_id)
+            .options(
+                selectinload(DBHistoryMeta.files),
+                selectinload(DBHistoryMeta.user),
+                selectinload(DBHistoryMeta.messages),
+            )
         )
 
         result = await session.execute(stmt)
@@ -81,6 +103,7 @@ class DaoHistoryMeta:
         history_id: UUID,
         summary: str | None = None,
         summary_index: int | None = None,
+        files: list[DBFileMeta] | None = None,
     ) -> DBHistoryMeta | None:
         db_history_meta = await cls.get_history_meta(
             session=session, user_id=user_id, history_id=history_id
@@ -94,5 +117,8 @@ class DaoHistoryMeta:
 
         if summary_index is not None:
             db_history_meta.summary_index = summary_index
+
+        if files:
+            db_history_meta.files = files
 
         return db_history_meta

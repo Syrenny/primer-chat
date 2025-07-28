@@ -40,11 +40,19 @@ s3:
     service_name: 's3'
     region: 'ru-central1'
     endpoint: 'http://0.0.0.0:9000'
-    bucket: 'primer-chat-pdf'
+    pdf_bucket: 'primer-chat-pdf'
+    chunks_bucket: 'primer-chat-chunks'
     presign_expire_seconds: 3600
 
 redis:
-    host: 'localhost'
-    port: 6379
-    db: 0
-    stream_key: 'generation_stream'
+    connection:
+        host: 0.0.0.0
+        port: 6379
+        db: 0
+
+    stream:
+        key: 'generation:stream'
+
+    active_history:
+        key_prefix: 'active_history'
+        ttl_seconds: 600

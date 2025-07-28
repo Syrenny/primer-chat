@@ -77,6 +77,9 @@ services:
               mc admin policy attach local readwrite --user ${MINIO_USER}
 
               mc mb --ignore-existing local/primer-chat-pdf
+
+              mc mb --ignore-existing local/primer-chat-chunks
+              mc ilm rule add local/primer-chat-chunks --expiry-days 1
             "
         networks:
             - chat-net

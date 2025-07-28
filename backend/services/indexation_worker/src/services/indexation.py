@@ -18,7 +18,7 @@ class FitzUtils:
     @classmethod
     def get_chunk_xyxy(
         cls, lines: List[LineSignature]
-    ) -> tuple[float, float, float, float]:
+    ) -> list[float, float, float, float]:
         """Получить объединённый bbox для нескольких строк"""
         full_bbox = None
         for line in lines:
@@ -27,7 +27,7 @@ class FitzUtils:
                 full_bbox = line_bbox if full_bbox is None else full_bbox | line_bbox
         if full_bbox is None:
             full_bbox = fitz.Rect(0, 0, 0, 0)
-        return tuple(full_bbox)
+        return list(full_bbox)
 
     @classmethod
     def get_content(cls, lines: List[LineSignature]) -> str:

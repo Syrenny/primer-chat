@@ -1,9 +1,9 @@
 from typing import AsyncIterator
 
 from loguru import logger
-from shared_models.openai.completions import ChatCompletionsResponse, ChatMessage
+from shared_models.openai.completions import ChatCompletionResponse, ChatMessage
 from shared_models.user.persona import UserPersona
-from src.adapters.openai import OpenAICompletionsGenerator
+from shared_adapters.openai import OpenAICompletionsGenerator
 from src.models.validator import ValidatorResponse
 from src.prompts.render import render_prompt
 from src.services.validation import ValidationService
@@ -40,7 +40,7 @@ class GenerationService:
 
     async def stream(
         self, query: str, history: list[ChatMessage], persona: UserPersona
-    ) -> AsyncIterator[ChatCompletionsResponse]:
+    ) -> AsyncIterator[ChatCompletionResponse]:
         try:
             await self.prompt_builder.system()
         except Exception as e:

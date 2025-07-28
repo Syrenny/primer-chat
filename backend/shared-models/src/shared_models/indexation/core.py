@@ -11,7 +11,7 @@ from .segmentation import HTMLTag
 class ChunkPosition(BaseModel):
     model_config = ConfigDict(strict=True)
 
-    xyxy: tuple[float, float, float, float]
+    xyxy: list[float, float, float, float]
     start_line: int
     end_line: int
 

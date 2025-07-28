@@ -1,6 +1,7 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
+from loguru import logger
 from shared_adapters.s3 import S3Storage
 from src.context.user_context import SessionContext
 from src.db.dao import DaoFileMeta
@@ -15,6 +16,7 @@ router = APIRouter()
     "/files",
     tags=["Files"],
     summary="Upload a file",
+    status_code=status.HTTP_201_CREATED,
 )
 async def add_file(
     file: UploadFile,
@@ -57,7 +59,7 @@ async def delete_file(
 
 
 @router.get(
-    "/files/{file_id}/signed-url",
+    "/files/{file_id}/signed_url",
     tags=["Files"],
     summary="Generate temporary link",
     response_model=SignedUrl,
@@ -94,5 +96,7 @@ async def list_files(
     user_id: UUID = Depends(SessionContext.get_user_id),
 ) -> list[FileMeta]:
     result = await DaoFileMeta.list_file_meta(session=session, user_id=user_id)
+
+    logger.debug(result)
 
     return FileMeta.from_db(result)

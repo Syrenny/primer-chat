@@ -17,8 +17,8 @@ from src.consumers.generation.request import GenerationProducer
 from src.db.dao import DaoUser
 from src.db.dao.history_meta import DaoHistoryMeta
 from src.models.completions import APICompletionsChunkResponse
-from src.services.chunks import ChunkService
 from src.services.history import HistoryService
+from src.services.retriever import RetrieveService
 
 
 class GenerationService:
@@ -29,12 +29,18 @@ class GenerationService:
         history_meta = await DaoHistoryMeta.get_history_meta(
             session=session, user_id=user_id, history_id=history_id
         )
+
+        if not history_meta:
+            raise ValueError(f"HistoryMeta not found: {history_id=}, {user_id=}")
+
         history = await HistoryService.get_history(
             user_id=user_id, history_id=history_id, session=session
         )
-        chunks = await ChunkService.find_chunks(
-            user_id=user_id, history_id=history_id, session=session, query=query
+
+        chunks = await RetrieveService.retrieve(
+            session=session, user_id=user_id, history_id=history_id, query=query
         )
+
         persona = await DaoUser.get_persona(session=session, user_id=user_id)
 
         request_id = uuid4()
@@ -54,6 +60,7 @@ class GenerationService:
         async with GenerationProducer() as producer:
             await producer.send(request)
 
+        logger.info(f"🛰️ Sent generation request {request_id} for history {history_id}")
         return request_id
 
     @classmethod
@@ -70,7 +77,7 @@ class GenerationService:
                 if response.is_final:
                     break
         except AsyncTimeoutError:
-            logger.warning("AsyncTimeoutError")
+            logger.warning(f"⏱️ Listen timed out for {user_id=} {history_id=}")
             return
 
     @classmethod
@@ -79,16 +86,29 @@ class GenerationService:
         user_id: UUID,
         history_id: UUID,
     ) -> AsyncIterator[GenerationWorkerChunkResponse]:
-        """Фильтрует сообщения из Redis по user_id и history_id"""
+        for attempt in range(local_config.generation.listen_max_attempts):
+            try:
+                raw = await wait_for(
+                    anext(RedisStreamClient.listen()),
+                    timeout=local_config.generation.listen_timeout_seconds,
+                )
+                response = GenerationWorkerChunkResponse.model_validate(raw)
 
-        while True:
-            raw: dict = await wait_for(
-                anext(RedisStreamClient.listen()),
-                timeout=local_config.generation.wait_for_stream_timeout,
-            )
-            response = GenerationWorkerChunkResponse.model_validate(raw)
+                if cls._is_valid_response(response, user_id, history_id):
+                    yield response
+            except AsyncTimeoutError:
+                logger.warning(
+                    f"⏱️ Timeout while waiting for Redis stream. Attempt {attempt + 1}/{local_config.generation.listen_max_attempts}"
+                )
+            except Exception as err:
+                logger.exception(f"❌ Error in Redis stream listening: {err}")
+        logger.warning(f"❗ Max attempts exceeded for {user_id=} {history_id=}")
 
-            if str(response.context.user_id) == str(user_id) and str(
-                response.context.history_id
-            ) == str(history_id):
-                yield response
+    @staticmethod
+    def _is_valid_response(
+        response: GenerationWorkerChunkResponse, user_id: UUID, history_id: UUID
+    ) -> bool:
+        return (
+            response.context.user_id == user_id
+            and response.context.history_id == history_id
+        )

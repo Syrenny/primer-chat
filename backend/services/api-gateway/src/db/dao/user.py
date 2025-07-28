@@ -3,6 +3,7 @@ from uuid import UUID
 from shared_models.user.persona import UserPersona
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy.orm import selectinload
 from src.db.models import DBUser
 from src.db.wrap import transactional
 
@@ -13,7 +14,16 @@ class DaoUser:
     async def get_user_by_id(
         cls, session: AsyncSession, user_id: UUID
     ) -> DBUser | None:
-        result = await session.execute(select(DBUser).filter(DBUser.id == user_id))
+        stmt = (
+            select(DBUser)
+            .filter(DBUser.id == user_id)
+            .options(
+                selectinload(DBUser.cookie),
+                selectinload(DBUser.files),
+                selectinload(DBUser.histories),
+            )
+        )
+        result = await session.execute(stmt)
         return result.scalar_one_or_none()
 
     @classmethod
@@ -21,7 +31,16 @@ class DaoUser:
     async def get_user_by_token(
         cls, session: AsyncSession, token: str
     ) -> DBUser | None:
-        stmt = select(DBUser).join(DBUser.token).filter(DBUser.token.has(token=token))
+        stmt = (
+            select(DBUser)
+            .join(DBUser.token)
+            .filter(DBUser.token.has(token=token))
+            .options(
+                selectinload(DBUser.cookie),
+                selectinload(DBUser.files),
+                selectinload(DBUser.histories),
+            )
+        )
         result = await session.execute(stmt)
         return result.scalar_one_or_none()
 

@@ -57,4 +57,6 @@ class HistoryService:
         messages = DaoMessages.get_messages(
             session=session, user_id=user_id, history_id=history_id
         )
-        return cls._maybe_summarize(messages)
+        return cls._maybe_summarize(
+            user_id=user_id, history_id=history_id, session=session, history=messages
+        )

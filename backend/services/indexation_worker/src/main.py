@@ -46,7 +46,13 @@ class WorkerIndexationRequestConsumer(BaseKafkaConsumer):
             pdf_bytes = await S3Storage.get_pdf_bytes_from_url(request.s3_link)
 
             service = get_indexation_service()
-            worker_response.result = await service.run(pdf_bytes)
+            result = await service.run(pdf_bytes)
+
+            await S3Storage.upload_chunks(
+                user_id=request.context.user_id,
+                file_id=request.context.file_id,
+                result=result,
+            )
         except Exception as err:
             worker_response.error = str(err)
             logger.exception(f"[indexation worker] 🧨 Indexation error: {err}")
@@ -56,19 +62,15 @@ class WorkerIndexationRequestConsumer(BaseKafkaConsumer):
 
 
 async def main():
-    consumer = WorkerIndexationRequestConsumer()
-    await consumer.start()
-
     loop = asyncio.get_running_loop()
     stop_event = asyncio.Event()
 
     for sig in (signal.SIGINT, signal.SIGTERM):
         loop.add_signal_handler(sig, stop_event.set)
-    try:
+
+    async with WorkerIndexationRequestConsumer():
         await stop_event.wait()
-    finally:
         logger.info("[indexation worker] 🧹 Graceful shutdown")
-        await consumer.stop()
 
 
 if __name__ == "__main__":
