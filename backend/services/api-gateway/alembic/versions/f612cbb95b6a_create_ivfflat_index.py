@@ -1,8 +1,8 @@
 """Create ivfflat index
 
-Revision ID: e9a3beff0b65
-Revises: 83d9b51b8071
-Create Date: 2025-07-28 17:48:40.129357
+Revision ID: f612cbb95b6a
+Revises: 91e223f7d273
+Create Date: 2025-07-29 13:45:16.739214
 
 """
 
@@ -12,8 +12,8 @@ from alembic import op
 from shared_config import config
 
 # revision identifiers, used by Alembic.
-revision: str = "e9a3beff0b65"
-down_revision: Union[str, Sequence[str], None] = "83d9b51b8071"
+revision: str = "f612cbb95b6a"
+down_revision: Union[str, Sequence[str], None] = "91e223f7d273"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

@@ -34,7 +34,7 @@ class ChunkService:
         return [
             IndexedChunk(
                 content=db_chunk.content,
-                embedding=db_chunk.embedding,
+                embedding=db_chunk.embedding.tolist(),
                 html_tag=db_chunk.html_tag,
                 position=ChunkPosition(
                     xyxy=db_chunk.xyxy,
@@ -51,13 +51,13 @@ class ChunkService:
     ) -> list[IndexedChunk]:
         embeddings_client = get_embeddings()
 
-        query_embedding = await embeddings_client.embed_one(query)
+        embeddings_response = await embeddings_client.embed_one(query)
 
         db_chunks = await DaoChunks.find_file_chunks(
             session=session,
             user_id=user_id,
             file_id=file_id,
-            query_embedding=query_embedding,
+            query_embedding=embeddings_response.data[0].embedding,
             limit=limit,
         )
 

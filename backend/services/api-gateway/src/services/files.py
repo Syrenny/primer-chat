@@ -15,8 +15,9 @@ from src.exceptions.files import (
     FilesInvalidPdfError,
     FilesInvalidTypeError,
     FilesValidationError,
+    MissingFileIdsError,
 )
-from src.models.files import FileMeta
+from src.models.dto.files import FileMeta
 
 
 class UploadFileReader:
@@ -69,7 +70,7 @@ class FileProcessor:
         try:
             s3_link = await cls._upload_to_storage(user_id, file_id, content)
 
-            db_meta = await cls._store_metadata(
+            _ = await cls._store_metadata(
                 session=session,
                 user_id=user_id,
                 filename=upload_file.filename,
@@ -83,9 +84,7 @@ class FileProcessor:
             raise err
 
         try:
-            await cls._enqueue_indexation(
-                s3_link, user_id=user_id, file_id=db_meta.file_id
-            )
+            await cls._enqueue_indexation(s3_link, user_id=user_id, file_id=file_id)
         except Exception as err:
             await FileProcessor.delete(
                 file_id=file_id, session=session, user_id=user_id
@@ -93,8 +92,8 @@ class FileProcessor:
             raise err
 
         return FileMeta(
-            file_id=db_meta.file_id,
-            filename=db_meta.filename,
+            file_id=file_id,
+            filename=upload_file.filename,
             is_indexed=False,
         )
 
@@ -164,3 +163,22 @@ class FileService:
         await DaoFileMeta.set_is_indexed(
             session=session, user_id=user_id, file_id=file_id, value=value
         )
+
+    @classmethod
+    async def get_files_by_ids(
+        cls,
+        user_id: UUID,
+        session: AsyncSession,
+        file_ids: list[UUID],
+    ) -> list[DBFileMeta]:
+        db_files = await DaoFileMeta.get_many_by_ids(
+            session=session, user_id=user_id, file_ids=file_ids
+        )
+
+        found_ids = {f.id for f in db_files}
+        missing = set(file_ids) - found_ids
+
+        if missing:
+            raise MissingFileIdsError(ids=missing)
+
+        return db_files

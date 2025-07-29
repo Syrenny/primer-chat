@@ -4,9 +4,8 @@ from datetime import UTC, datetime
 import sqlalchemy as db
 from pgvector.sqlalchemy import Vector
 from shared_config import config
-from shared_models.user.persona import UserPersona
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
-from sqlalchemy.orm import DeclarativeBase, relationship
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
 def utcnow():
@@ -15,6 +14,9 @@ def utcnow():
 
 class Base(DeclarativeBase):
     __abstract__ = True
+
+    def __repr__(self):
+        return f"<{self.__class__.__name__} id={getattr(self, 'id', None)}>"
 
 
 history_file_association = db.Table(
@@ -38,33 +40,29 @@ history_file_association = db.Table(
 class DBUser(Base):
     __tablename__ = "users"
 
-    id: uuid.UUID = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    persona = db.Column(
-        JSONB, nullable=False, default=lambda: UserPersona().model_dump()
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
-    created_at: datetime = db.Column(
-        db.DateTime(timezone=True),
-        nullable=False,
-        default=utcnow,
+    persona: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        db.DateTime(timezone=True), default=utcnow
     )
 
     # Cookie
-    cookie = relationship(
+    cookie: Mapped["DBUserCookie"] = relationship(
         "DBUserCookie", back_populates="user", uselist=False, lazy="selectin"
     )
 
     # Files
-    files = relationship(
+    files: Mapped[list["DBFileMeta"]] = relationship(
         "DBFileMeta",
-        back_populates="user",
         cascade="all, delete-orphan",
         lazy="selectin",
     )
 
     # Histories
-    histories = relationship(
+    histories: Mapped[list["DBHistoryMeta"]] = relationship(
         "DBHistoryMeta",
-        back_populates="user",
         cascade="all, delete-orphan",
         lazy="selectin",
     )
@@ -73,40 +71,44 @@ class DBUser(Base):
 class DBUserCookie(Base):
     __tablename__ = "cookies"
 
-    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
 
-    created_at: datetime = db.Column(
-        db.DateTime(timezone=True),
-        nullable=False,
-        default=utcnow,
+    created_at: Mapped[datetime] = mapped_column(
+        db.DateTime(timezone=True), default=utcnow
     )
 
     # User
-    user_id = db.Column(UUID(as_uuid=True), db.ForeignKey("users.id"), nullable=False)
-    user = relationship("DBUser", back_populates="cookie", lazy="selectin")
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), db.ForeignKey("users.id"), nullable=False
+    )
+    user: Mapped["DBUser"] = relationship(
+        "DBUser", back_populates="cookie", lazy="selectin"
+    )
 
 
 class DBFileMeta(Base):
     __tablename__ = "file_meta"
 
-    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    filename = db.Column(db.String, nullable=False)
-    is_indexed = db.Column(db.Boolean, default=False, nullable=False)
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    filename: Mapped[str] = mapped_column(db.String, nullable=False)
+    is_indexed: Mapped[bool] = mapped_column(default=False, nullable=False)
 
-    created_at: datetime = db.Column(
-        db.DateTime(timezone=True),
-        nullable=False,
-        default=utcnow,
+    created_at: Mapped[datetime] = mapped_column(
+        db.DateTime(timezone=True), default=utcnow
     )
 
     # User
-    user_id = db.Column(UUID(as_uuid=True), db.ForeignKey("users.id"), nullable=False)
-    user = relationship("DBUser", back_populates="files", lazy="selectin")
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), db.ForeignKey("users.id"), nullable=False
+    )
 
     # Chunks
-    chunks = relationship(
+    chunks: Mapped[list["DBChunk"]] = relationship(
         "DBChunk",
-        back_populates="file",
         cascade="all, delete-orphan",
         lazy="selectin",
     )
@@ -115,25 +117,21 @@ class DBFileMeta(Base):
 class DBMessage(Base):
     __tablename__ = "messages"
 
-    id: uuid.UUID = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    is_user_message: bool = db.Column(db.Boolean, nullable=False)
-    content: str = db.Column(db.Text, nullable=False)
-    timestamp: datetime = db.Column(
-        db.DateTime(timezone=True),
-        nullable=False,
-        default=utcnow,
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    data: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    timestamp: Mapped[datetime] = mapped_column(
+        db.DateTime(timezone=True), default=utcnow
     )
 
     # History
-    history_id = db.Column(
+    history_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), db.ForeignKey("history_meta.id"), nullable=False
-    )
-    history_meta = relationship(
-        "DBHistoryMeta", back_populates="messages", lazy="selectin"
     )
 
     # User
-    user_id: uuid.UUID = db.Column(
+    user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), db.ForeignKey("users.id"), nullable=False
     )
 
@@ -141,53 +139,51 @@ class DBMessage(Base):
 class DBChunk(Base):
     __tablename__ = "chunks"
 
-    id: uuid.UUID = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    content: str = db.Column(db.Text, nullable=False)
-    embedding = db.Column(Vector(config.embeddings.dimensions))
-    html_tag = db.Column(db.String, nullable=False)
-    xyxy = db.Column(ARRAY(db.Float), nullable=False)
-    start_line = db.Column(db.Integer, nullable=False)
-    end_line = db.Column(db.Integer, nullable=False)
-    created_at: datetime = db.Column(
-        db.DateTime(timezone=True),
-        nullable=False,
-        default=utcnow,
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    content: Mapped[str] = mapped_column(db.Text, nullable=False)
+    embedding: Mapped[list[float]] = mapped_column(Vector(config.embeddings.dimensions))
+    html_tag: Mapped[str] = mapped_column(db.String, nullable=False)
+    xyxy: Mapped[list[float]] = mapped_column(ARRAY(db.Float), nullable=False)
+    start_line: Mapped[int] = mapped_column(db.Integer, nullable=False)
+    end_line: Mapped[int] = mapped_column(db.Integer, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        db.DateTime(timezone=True), default=utcnow
     )
 
     # User
-    user_id: uuid.UUID = db.Column(
+    user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), db.ForeignKey("users.id"), nullable=False
     )
 
     # File
-    file_id: uuid.UUID = db.Column(
+    file_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), db.ForeignKey("file_meta.id"), nullable=False
     )
-    file = relationship("DBFileMeta", back_populates="chunks", lazy="selectin")
 
 
 class DBHistoryMeta(Base):
     __tablename__ = "history_meta"
 
-    id: uuid.UUID = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    summary: str = db.Column(db.Text, nullable=True)
-    summary_index: int = db.Column(db.Integer, nullable=True)
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    summary: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    # HistoryMetaSummary
 
     # User
-    user_id = db.Column(UUID(as_uuid=True), db.ForeignKey("users.id"), nullable=False)
-    user = relationship("DBUser", back_populates="histories", lazy="selectin")
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), db.ForeignKey("users.id"), nullable=False
+    )
 
     # Messages
-    messages = relationship(
-        "DBMessage",
-        back_populates="history_meta",
-        cascade="all, delete-orphan",
-        lazy="selectin",
+    messages: Mapped[list["DBMessage"]] = relationship(
+        cascade="all, delete-orphan", lazy="selectin"
     )
 
     # Files
-    files = relationship(
-        "DBFileMeta",
+    files: Mapped[list["DBFileMeta"]] = relationship(
         secondary=history_file_association,
         lazy="selectin",
     )

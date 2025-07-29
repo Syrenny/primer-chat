@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from src.exceptions.base import AppException
 
 
@@ -19,3 +21,8 @@ class FilesEncryptedError(AppException):
 class FilesInvalidPdfError(AppException):
     def __init__(self, filename: str):
         super().__init__(f"Failed to parse PDF: {filename}")
+
+
+class MissingFileIdsError(AppException):
+    def __init__(self, ids: set[UUID]):
+        super().__init__(f"Missing file_ids: {ids}")

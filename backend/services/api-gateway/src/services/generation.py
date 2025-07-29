@@ -10,30 +10,41 @@ from shared_models.generation.interface import (
     GenerationWorkerChunkResponse,
     GenerationWorkerRequest,
 )
+from shared_models.openai.completions import ChatMessage
 from shared_models.worker.context import WorkerRequestContext
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.config import config as local_config
 from src.consumers.generation.request import GenerationProducer
-from src.db.dao import DaoUser
-from src.db.dao.history_meta import DaoHistoryMeta
-from src.models.completions import APICompletionsChunkResponse
-from src.services.history import HistoryService
+from src.db.dao import DaoMessages, DaoUser
+from src.models.dto.completions import APICompletionsChunkResponse
+from src.services.history import HistoryMessagesService, HistoryMetaService
 from src.services.retriever import RetrieveService
 
 
 class GenerationService:
     @classmethod
+    async def _save_query(
+        cls, user_id: UUID, history_id: UUID, session: AsyncSession, query: str
+    ) -> None:
+        chat_message = ChatMessage(role="user", content=query)
+
+        await DaoMessages.add_message(
+            session=session, user_id=user_id, history_id=history_id, data=chat_message
+        )
+
+    @classmethod
     async def publish(
         cls, user_id: UUID, history_id: UUID, session: AsyncSession, query: str
     ) -> UUID:
-        history_meta = await DaoHistoryMeta.get_history_meta(
+        await cls._save_query(
+            user_id=user_id, history_id=history_id, session=session, query=query
+        )
+
+        history_meta = await HistoryMetaService.get_history_meta(
             session=session, user_id=user_id, history_id=history_id
         )
 
-        if not history_meta:
-            raise ValueError(f"HistoryMeta not found: {history_id=}, {user_id=}")
-
-        history = await HistoryService.get_history(
+        history_messages = await HistoryMessagesService.get_history_messages(
             user_id=user_id, history_id=history_id, session=session
         )
 
@@ -50,10 +61,10 @@ class GenerationService:
                 user_id=user_id,
                 history_id=history_id,
             ),
-            history=history,
+            history=history_messages,
             query=query,
             chunks=chunks,
-            summary=history_meta.summary,
+            summary=history_meta.summary.content,
             persona=persona,
         )
 

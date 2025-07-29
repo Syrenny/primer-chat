@@ -4,7 +4,7 @@ from src.config import config as local_config
 from src.context.user_context import SessionContext
 from src.db.dao import DaoCookie, DaoUser
 from src.db.session import session_manager
-from src.models.session import CookieData, UserContext
+from src.models.dto.session import CookieData, UserContext
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
 from starlette.responses import Response

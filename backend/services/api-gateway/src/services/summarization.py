@@ -2,7 +2,7 @@ from loguru import logger
 from pydantic import ValidationError
 from shared_adapters.openai import OpenAIFullCompletions
 from shared_models.openai.completions import ChatCompletionResponse, ChatMessage, Usage
-from src.models.summarization import ParsedSummaryResponse
+from src.models.dto.summarization import ParsedSummaryResponse
 from src.prompts.render import render_prompt
 
 
@@ -23,12 +23,12 @@ class SummaryService:
     async def summarize(
         self, history: list[ChatMessage]
     ) -> tuple[ParsedSummaryResponse, Usage]:
-        response: ChatCompletionResponse = await self._make_summary(history)
+        completions_response: ChatCompletionResponse = await self._make_summary(history)
         try:
-            raw = response.choices[0].message
-            summary = ParsedSummaryResponse.model_validate_json(raw)
+            raw = completions_response.choices[0].message
+            summary_response = ParsedSummaryResponse.model_validate_json(raw)
         except ValidationError as err:
             logger.error(f"Summary response validation error: {raw}")
             raise err
 
-        return summary, response.usage
+        return summary_response, completions_response.usage

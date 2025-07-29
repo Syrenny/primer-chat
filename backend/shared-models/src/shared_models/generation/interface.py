@@ -1,7 +1,8 @@
-from typing import Any, Literal
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
+from shared_models.indexation.core import IndexedChunk
 from shared_models.openai.completions import ChatCompletionResponse, ChatMessage
 from shared_models.user.persona import UserPersona
 from shared_models.worker.context import WorkerRequestContext
@@ -14,8 +15,8 @@ class GenerationWorkerRequest(BaseModel):
 
     history: list[ChatMessage]
     query: str
-    chunks: Any
-    summary: Any
+    chunks: list[IndexedChunk]
+    summary: str
     persona: UserPersona
 
 

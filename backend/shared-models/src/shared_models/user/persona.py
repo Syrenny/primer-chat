@@ -9,4 +9,4 @@ class UserPersona(BaseModel):
     tone: Literal["formal", "friendly", "neutral"] = "neutral"
     verbosity: Literal["short", "normal", "detailed"] = "normal"
     language: Literal["ru", "en"] = "ru"
-    suggestions: str = ""
+    suggestions: list[str] = []

@@ -10,12 +10,14 @@ class FileMeta(BaseModel):
     is_indexed: bool
 
     @classmethod
-    def from_db(cls, files: list[DBFileMeta]) -> list["FileMeta"]:
+    def from_db(cls, db_files: list[DBFileMeta]) -> list["FileMeta"]:
         return [
             cls(
-                file_id=file.file_id, filename=file.filename, is_indexed=file.is_indexed
+                file_id=db_file_meta.id,
+                filename=db_file_meta.filename,
+                is_indexed=db_file_meta.is_indexed,
             )
-            for file in files
+            for db_file_meta in db_files
         ]
 
     model_config = ConfigDict(json_encoders={UUID: str})

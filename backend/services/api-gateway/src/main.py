@@ -9,7 +9,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from loguru import logger
 from shared_kafka.base import BaseKafkaConsumer
-from src.api import completions_router, files_router, history_meta_router
+from src.api import (
+    completions_router,
+    files_router,
+    history_meta_router,
+    messages_router,
+)
 from src.api.middleware import SessionMiddleware
 from src.config import config
 from src.consumers.indexation.response import IndexationResultConsumer
@@ -25,7 +30,6 @@ async def lifespan(app: FastAPI) -> Any:
 
     consumers: list[BaseKafkaConsumer] = [IndexationResultConsumer()]
 
-    logger.debug("Init consumers")
     for consumer in consumers:
         await consumer.start()
 
@@ -61,6 +65,7 @@ prefix = "/api"
 app.include_router(completions_router, prefix=prefix)
 app.include_router(files_router, prefix=prefix)
 app.include_router(history_meta_router, prefix=prefix)
+app.include_router(messages_router, prefix=prefix)
 
 
 if __name__ == "__main__":

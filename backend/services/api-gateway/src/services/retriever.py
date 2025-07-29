@@ -24,7 +24,7 @@ class RetrieveService:
 
         retrieved_chunks_tasks = [
             ChunkService.find_chunks(
-                file_id=db_file_meta.file_id,
+                file_id=db_file_meta.id,
                 user_id=user_id,
                 session=session,
                 query=query,
@@ -38,8 +38,8 @@ class RetrieveService:
         chunks: list[IndexedChunk] = []
         for file_meta, result in zip(history_meta.files, results):
             if isinstance(result, Exception):
-                logger.warning(
-                    f"[Retriever] ⚠️ Failed to retrieve chunks from file {file_meta.file_id}: {result}"
+                logger.error(
+                    f"[Retriever] ⚠️ Failed to retrieve chunks from file {file_meta.id}: {result}"
                 )
                 continue
             result.sort(key=lambda c: (c.position.start_line, c.position.end_line))

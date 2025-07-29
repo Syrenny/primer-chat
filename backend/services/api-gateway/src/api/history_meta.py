@@ -1,15 +1,17 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Path, status
-from src.context.user_context import SessionContext
-from src.db.dao import DaoFileMeta
 from src.db.dao.history_meta import DaoHistoryMeta
-from src.db.session import AsyncSession, get_db
-from src.models.history import (
+from src.models.dto.history import (
     CreateHistoryMetaRequest,
     HistoryMeta,
+    HistoryMetaSummary,
     UpdateHistoryMetaRequest,
 )
+from src.services.files import FileService
+from src.services.history import HistoryMetaService
+
+from ._context import RequestContext
 
 router = APIRouter()
 
@@ -21,23 +23,19 @@ router = APIRouter()
     status_code=status.HTTP_201_CREATED,
 )
 async def create_history_meta(
-    request: CreateHistoryMetaRequest,
-    session: AsyncSession = Depends(get_db),
-    user_id: UUID = Depends(SessionContext.get_user_id),
+    body: CreateHistoryMetaRequest, ctx: RequestContext = Depends()
 ) -> HistoryMeta:
-    db_files = []
-    if request.file_ids:
-        for file_id in request.file_ids:
-            db_file_meta = await DaoFileMeta.get_file_meta(
-                session=session, user_id=user_id, file_id=file_id
-            )
-            db_files.append(db_file_meta)
-
-    db_history_meta = await DaoHistoryMeta.add_history_meta(
-        session=session, user_id=user_id, summary=request.summary, summary_index=0
+    db_files = await FileService.get_files_by_ids(
+        user_id=ctx.user_id, session=ctx.session, file_ids=body.file_ids
     )
 
-    return HistoryMeta.from_db([db_history_meta])[0]
+    history_meta = HistoryMetaService.create_history_meta(
+        session=ctx.session,
+        user_id=ctx.user_id,
+        db_files=db_files,
+    )
+
+    return history_meta
 
 
 @router.get(
@@ -45,13 +43,12 @@ async def create_history_meta(
     tags=["History context"],
     summary="Lists all history contexts per user",
 )
-async def list_history_meta(
-    session: AsyncSession = Depends(get_db),
-    user_id: UUID = Depends(SessionContext.get_user_id),
-) -> list[HistoryMeta]:
-    result = await DaoHistoryMeta.list_history_meta(session=session, user_id=user_id)
+async def list_history_meta(ctx: RequestContext = Depends()) -> list[HistoryMeta]:
+    result = await DaoHistoryMeta.list_history_meta(
+        session=ctx.session, user_id=ctx.user_id
+    )
 
-    return HistoryMeta.from_db(result)
+    return HistoryMeta.from_orm_list(result)
 
 
 @router.get(
@@ -60,15 +57,12 @@ async def list_history_meta(
     summary="Get history context",
 )
 async def get_history_meta(
-    session: AsyncSession = Depends(get_db),
-    user_id: UUID = Depends(SessionContext.get_user_id),
-    history_id: UUID = Path(..., description="UUID of the history to delete"),
+    ctx: RequestContext = Depends(),
+    history_id: UUID = Path(..., description="UUID of the history"),
 ) -> HistoryMeta | None:
-    result = await DaoHistoryMeta.get_history_meta(
-        session=session, user_id=user_id, history_id=history_id
+    return HistoryMetaService.get_history_meta(
+        user_id=ctx.user_id, session=ctx.session, history_id=history_id
     )
-
-    return HistoryMeta.from_db(result)
 
 
 @router.delete(
@@ -78,12 +72,11 @@ async def get_history_meta(
     status_code=status.HTTP_204_NO_CONTENT,
 )
 async def delete_history_meta(
-    history_id: UUID = Path(..., description="UUID of the history to delete"),
-    session: AsyncSession = Depends(get_db),
-    user_id: UUID = Depends(SessionContext.get_user_id),
+    ctx: RequestContext = Depends(),
+    history_id: UUID = Path(..., description="UUID of the history"),
 ) -> None:
     await DaoHistoryMeta.delete_history_meta(
-        session=session, user_id=user_id, history_id=history_id
+        session=ctx.session, user_id=ctx.user_id, history_id=history_id
     )
 
 
@@ -93,25 +86,20 @@ async def delete_history_meta(
     summary="Update history context",
 )
 async def update_history_meta(
-    request: UpdateHistoryMetaRequest,
-    history_id: UUID = Path(..., description="UUID of the history to delete"),
-    session: AsyncSession = Depends(get_db),
-    user_id: UUID = Depends(SessionContext.get_user_id),
+    body: UpdateHistoryMetaRequest,
+    ctx: RequestContext = Depends(),
+    history_id: UUID = Path(..., description="UUID of the history"),
 ) -> HistoryMeta:
-    db_files = []
-    if request.file_ids:
-        for file_id in request.file_ids:
-            db_file_meta = await DaoFileMeta.get_file_meta(
-                session=session, user_id=user_id, file_id=file_id
-            )
-            db_files.append(db_file_meta)
+    db_files = await FileService.get_files_by_ids(
+        user_id=ctx.user_id, session=ctx.session, file_ids=body.file_ids
+    )
 
     result = await DaoHistoryMeta.update_history_meta(
-        session=session,
-        user_id=user_id,
+        session=ctx.session,
+        user_id=ctx.user_id,
         history_id=history_id,
-        summary=request.summary,
+        summary=HistoryMetaSummary(),
         files=db_files,
     )
 
-    return HistoryMeta.from_db([result])[0]
+    return HistoryMeta.from_orm(result)

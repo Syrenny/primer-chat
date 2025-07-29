@@ -1,5 +1,6 @@
 from kafka.admin import KafkaAdminClient, NewTopic
 from shared_config import config
+from loguru import logger
 
 
 def init_kafka() -> None:
@@ -28,6 +29,6 @@ def init_kafka() -> None:
 
     if to_create:
         admin.create_topics(to_create)
-        print("✅ Topics created")
+        logger.info("✅ Topics created")
     else:
-        print("ℹ️ All topics already exist")
+        logger.info("ℹ️ All topics already exist")

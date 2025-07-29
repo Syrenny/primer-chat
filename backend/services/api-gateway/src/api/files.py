@@ -3,11 +3,11 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
 from loguru import logger
 from shared_adapters.s3 import S3Storage
-from src.context.user_context import SessionContext
 from src.db.dao import DaoFileMeta
-from src.db.session import AsyncSession, get_db
-from src.models.files import FileMeta, FileStatus, SignedUrl
+from src.models.dto.files import FileMeta, FileStatus, SignedUrl
 from src.services import FileService, get_file_service
+
+from ._context import RequestContext
 
 router = APIRouter()
 
@@ -20,12 +20,11 @@ router = APIRouter()
 )
 async def add_file(
     file: UploadFile,
-    session: AsyncSession = Depends(get_db),
     file_service: FileService = Depends(get_file_service),
-    user_id: UUID = Depends(SessionContext.get_user_id),
+    ctx: RequestContext = Depends(),
 ) -> FileMeta:
     response = await file_service.add_file(
-        upload_file=file, session=session, user_id=user_id
+        upload_file=file, session=ctx.session, user_id=ctx.user_id
     )
 
     return response
@@ -34,13 +33,12 @@ async def add_file(
 @router.get("/files/{file_id}/status", tags=["Files"], response_model=FileStatus)
 async def get_indexing_status(
     file_id: UUID,
-    session: AsyncSession = Depends(get_db),
-    user_id: UUID = Depends(SessionContext.get_user_id),
+    ctx: RequestContext = Depends(),
 ) -> FileStatus:
     status = await DaoFileMeta.get_is_indexed(
-        session=session, user_id=user_id, file_id=file_id
+        session=ctx.session, user_id=ctx.user_id, file_id=file_id
     )
-    return FileStatus(file_id=file_id, status=status)
+    return FileStatus(file_id=file_id, is_indexed=status)
 
 
 @router.delete(
@@ -51,11 +49,12 @@ async def get_indexing_status(
 )
 async def delete_file(
     file_id: UUID,
-    session: AsyncSession = Depends(get_db),
     file_service: FileService = Depends(get_file_service),
-    user_id: UUID = Depends(SessionContext.get_user_id),
+    ctx: RequestContext = Depends(),
 ) -> None:
-    await file_service.delete_file(file_id=file_id, session=session, user_id=user_id)
+    await file_service.delete_file(
+        file_id=file_id, session=ctx.session, user_id=ctx.user_id
+    )
 
 
 @router.get(
@@ -66,12 +65,11 @@ async def delete_file(
 )
 async def get_signed_url(
     file_id: UUID,
-    session: AsyncSession = Depends(get_db),
-    user_id: UUID = Depends(SessionContext.get_user_id),
+    ctx: RequestContext = Depends(),
 ) -> SignedUrl:
     # Проверка, что файл существует и принадлежит пользователю
     file_meta = await DaoFileMeta.get_file_meta(
-        session=session, user_id=user_id, file_id=file_id
+        session=ctx.session, user_id=ctx.user_id, file_id=file_id
     )
     if not file_meta:
         raise HTTPException(
@@ -80,7 +78,7 @@ async def get_signed_url(
 
     # Генерация ссылки
     presigned_url = await S3Storage.generate_presigned_url(
-        user_id=user_id,
+        user_id=ctx.user_id,
         file_id=file_id,
     )
     return SignedUrl(url=presigned_url)
@@ -92,10 +90,9 @@ async def get_signed_url(
     summary="List all files",
 )
 async def list_files(
-    session: AsyncSession = Depends(get_db),
-    user_id: UUID = Depends(SessionContext.get_user_id),
+    ctx: RequestContext = Depends(),
 ) -> list[FileMeta]:
-    result = await DaoFileMeta.list_file_meta(session=session, user_id=user_id)
+    result = await DaoFileMeta.list_file_meta(session=ctx.session, user_id=ctx.user_id)
 
     logger.debug(result)
 

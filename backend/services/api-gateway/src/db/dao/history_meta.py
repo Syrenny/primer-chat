@@ -5,6 +5,7 @@ from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 from src.db.models import DBFileMeta, DBHistoryMeta
 from src.db.wrap import transactional
+from src.models.dto.history import HistoryMetaSummary
 
 
 class DaoHistoryMeta:
@@ -19,9 +20,8 @@ class DaoHistoryMeta:
                 DBHistoryMeta.user_id == user_id,
             )
             .options(
-                selectinload(DBHistoryMeta.files),
-                selectinload(DBHistoryMeta.user),
                 selectinload(DBHistoryMeta.messages),
+                selectinload(DBHistoryMeta.files),
             )
         )
 
@@ -42,15 +42,12 @@ class DaoHistoryMeta:
         cls,
         session: AsyncSession,
         user_id: UUID,
-        summary: str,
-        summary_index: int = 0,
+        summary: HistoryMetaSummary,
         files: list[DBFileMeta] | None = None,
     ) -> DBHistoryMeta:
-        db_history_meta = DBHistoryMeta(
-            user_id=user_id, summary=summary, summary_index=summary_index
-        )
+        db_history_meta = DBHistoryMeta(user_id=user_id, summary=summary.model_dump())
         if files:
-            db_history_meta.extend(files)
+            db_history_meta.files = files
         session.add(db_history_meta)
 
         return db_history_meta
@@ -67,9 +64,8 @@ class DaoHistoryMeta:
             select(DBHistoryMeta)
             .filter(DBHistoryMeta.user_id == user_id, DBHistoryMeta.id == history_id)
             .options(
-                selectinload(DBHistoryMeta.files),
-                selectinload(DBHistoryMeta.user),
                 selectinload(DBHistoryMeta.messages),
+                selectinload(DBHistoryMeta.files),
             )
         )
 
@@ -101,8 +97,7 @@ class DaoHistoryMeta:
         session: AsyncSession,
         user_id: UUID,
         history_id: UUID,
-        summary: str | None = None,
-        summary_index: int | None = None,
+        summary: HistoryMetaSummary | None = None,
         files: list[DBFileMeta] | None = None,
     ) -> DBHistoryMeta | None:
         db_history_meta = await cls.get_history_meta(
@@ -113,10 +108,7 @@ class DaoHistoryMeta:
             return None
 
         if summary is not None:
-            db_history_meta.summary = summary
-
-        if summary_index is not None:
-            db_history_meta.summary_index = summary_index
+            db_history_meta.summary = summary.model_dump()
 
         if files:
             db_history_meta.files = files

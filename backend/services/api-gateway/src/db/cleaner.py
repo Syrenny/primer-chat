@@ -26,12 +26,12 @@ class DBCleaner:
 
             for file_meta in old_unindexed_files:
                 logger.warning(
-                    f"[DBCleaner] 🗑 Удаляю: {file_meta.file_id} ({file_meta.filename})"
+                    f"[DBCleaner] 🗑 Удаляю: {file_meta.id} ({file_meta.filename})"
                 )
                 await FileProcessor.delete(
                     user_id=file_meta.user_id,
                     session=session,
-                    file_id=file_meta.file_id,
+                    file_id=file_meta.id,
                 )
 
             logger.info(f"[DBCleaner] ✅ Удалено файлов: {len(old_unindexed_files)}")
@@ -44,11 +44,11 @@ class DBCleaner:
         async with session_manager.session() as session:
             all_files = await DaoFileMeta.list_all_files(session=session)
             for file_meta in all_files:
-                logger.warning(f"[DBCleaner] 🔥 Удаляю ВСЁ: {file_meta.file_id}")
+                logger.warning(f"[DBCleaner] 🔥 Удаляю ВСЁ: {file_meta.id}")
                 await FileProcessor.delete(
                     user_id=file_meta.user_id,
                     session=session,
-                    file_id=file_meta.file_id,
+                    file_id=file_meta.id,
                 )
 
             logger.info(

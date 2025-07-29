@@ -3,6 +3,7 @@ from uuid import UUID, uuid4
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy.orm import selectinload
 from src.db.models import DBFileMeta
 from src.db.wrap import transactional
 
@@ -13,8 +14,14 @@ class DaoFileMeta:
     async def list_file_meta(
         cls, session: AsyncSession, user_id: UUID
     ) -> list[DBFileMeta]:
-        stmt = select(DBFileMeta).filter(
-            DBFileMeta.user_id == user_id,
+        stmt = (
+            select(DBFileMeta)
+            .filter(
+                DBFileMeta.user_id == user_id,
+            )
+            .options(
+                selectinload(DBFileMeta.chunks),
+            )
         )
 
         result = await session.execute(stmt)
@@ -30,27 +37,49 @@ class DaoFileMeta:
         filename: str,
         file_id: UUID = uuid4(),
     ) -> DBFileMeta:
-        file_meta = DBFileMeta(
+        db_file_meta = DBFileMeta(
+            id=file_id,
             user_id=user_id,
-            file_id=file_id,
             filename=filename,
         )
-        session.add(file_meta)
+        session.add(db_file_meta)
 
-        return file_meta
+        return db_file_meta
 
     @classmethod
     @transactional
     async def get_file_meta(
         cls, session: AsyncSession, user_id: UUID, file_id: UUID
     ) -> None | DBFileMeta:
-        stmt = select(DBFileMeta).filter(
-            DBFileMeta.user_id == user_id, DBFileMeta.file_id == file_id
+        stmt = (
+            select(DBFileMeta)
+            .filter(DBFileMeta.user_id == user_id, DBFileMeta.id == file_id)
+            .options(
+                selectinload(DBFileMeta.chunks),
+            )
         )
 
         result = await session.execute(stmt)
 
         return result.scalars().first()
+
+    @classmethod
+    @transactional
+    async def get_many_by_ids(
+        cls, session: AsyncSession, user_id: UUID, file_ids: list[UUID]
+    ) -> list[DBFileMeta]:
+        stmt = (
+            select(DBFileMeta)
+            .where(DBFileMeta.user_id == user_id)
+            .where(DBFileMeta.id.in_(file_ids))
+            .options(
+                selectinload(DBFileMeta.chunks),
+            )
+        )
+
+        result = await session.execute(stmt)
+
+        return result.scalars().all()
 
     @classmethod
     @transactional
@@ -106,8 +135,12 @@ class DaoFileMeta:
     async def get_old_unindexed_files(
         cls, session: AsyncSession, older_than: datetime
     ) -> list[DBFileMeta]:
-        stmt = select(DBFileMeta).where(
-            not DBFileMeta.is_indexed, DBFileMeta.created_at < older_than
+        stmt = (
+            select(DBFileMeta)
+            .where(not DBFileMeta.is_indexed, DBFileMeta.created_at < older_than)
+            .options(
+                selectinload(DBFileMeta.chunks),
+            )
         )
         result = await session.execute(stmt)
         return result.scalars().all()
@@ -115,7 +148,9 @@ class DaoFileMeta:
     @classmethod
     @transactional
     async def list_all_files(cls, session: AsyncSession) -> list[DBFileMeta]:
-        stmt = select(DBFileMeta)
+        stmt = select(DBFileMeta).options(
+            selectinload(DBFileMeta.chunks),
+        )
 
         result = await session.execute(stmt)
 

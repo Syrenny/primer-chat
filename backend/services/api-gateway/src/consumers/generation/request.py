@@ -1,10 +1,10 @@
+from shared_config import config as global_config
 from shared_kafka.base import BaseKafkaProducer
 from shared_models.generation.interface import GenerationWorkerRequest
-from src.config import config
 
 
 class GenerationProducer(BaseKafkaProducer):
     async def send(self, payload: GenerationWorkerRequest):
         await self.send_json(
-            topic=config.kafka.indexation.request.topic, payload=payload
+            topic=global_config.kafka.generation.topic, payload=payload
         )

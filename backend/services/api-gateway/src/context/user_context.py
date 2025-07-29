@@ -1,7 +1,7 @@
 from contextvars import ContextVar
 from uuid import UUID
 
-from src.models.session import UserContext
+from src.models.dto.session import UserContext
 
 
 class SessionContext:
