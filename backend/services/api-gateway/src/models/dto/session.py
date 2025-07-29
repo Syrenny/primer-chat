@@ -1,6 +1,7 @@
-from uuid import UUID, uuid4
+from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict
+from src.db.models import DBCookie
 
 
 class UserContext(BaseModel):
@@ -11,6 +12,9 @@ class UserContext(BaseModel):
 
 class CookieData(BaseModel):
     cookie_id: UUID
-    user_id: UUID = Field(default_factory=uuid4)
 
     model_config = ConfigDict(json_encoders={UUID: str})
+
+    @classmethod
+    def from_orm(cls, db_cookie: DBCookie) -> "CookieData":
+        return cls(cookie_id=db_cookie.id)

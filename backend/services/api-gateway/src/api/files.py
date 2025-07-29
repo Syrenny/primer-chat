@@ -96,4 +96,4 @@ async def list_files(
 
     logger.debug(result)
 
-    return FileMeta.from_db(result)
+    return FileMeta.from_orm_list(result)

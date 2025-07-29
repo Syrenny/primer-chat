@@ -1,9 +1,9 @@
 from typing import AsyncIterator
 
 from loguru import logger
+from shared_adapters.openai import OpenAICompletionsGenerator
 from shared_models.openai.completions import ChatCompletionResponse, ChatMessage
 from shared_models.user.persona import UserPersona
-from shared_adapters.openai import OpenAICompletionsGenerator
 from src.models.validator import ValidatorResponse
 from src.prompts.render import render_prompt
 from src.services.validation import ValidationService
@@ -34,7 +34,7 @@ class PromptBuilder:
 
 
 class GenerationService:
-    def __init__(self):
+    def __init__(self) -> None:
         self.completions = OpenAICompletionsGenerator()
         self.prompt_builder = PromptBuilder()
 
@@ -42,7 +42,7 @@ class GenerationService:
         self, query: str, history: list[ChatMessage], persona: UserPersona
     ) -> AsyncIterator[ChatCompletionResponse]:
         try:
-            await self.prompt_builder.system()
+            await self.prompt_builder.system(persona=persona)
         except Exception as e:
             logger.exception(e)
 

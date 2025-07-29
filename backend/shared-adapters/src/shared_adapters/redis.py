@@ -2,6 +2,7 @@ from typing import AsyncIterator
 from uuid import UUID
 
 import redis.asyncio as redis
+import redis.exceptions as redis_exceptions
 from loguru import logger
 from shared_config import config
 
@@ -69,7 +70,7 @@ class RedisStreamClient:
         return cls._client
 
     @classmethod
-    async def ensure_stream_and_group(cls):
+    async def ensure_stream_and_group(cls) -> None:
         """Создаёт стрим и группу, если не существует"""
         client = await cls.get_client()
 
@@ -84,7 +85,7 @@ class RedisStreamClient:
             logger.info(
                 f"Redis group '{cls._group_name}' created on stream '{config.redis.stream.key}'"
             )
-        except redis.exceptions.ResponseError as e:
+        except redis_exceptions.ResponseError as e:
             if "BUSYGROUP" in str(e):
                 pass  # группа уже существует
             else:

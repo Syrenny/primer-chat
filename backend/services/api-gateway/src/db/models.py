@@ -8,14 +8,14 @@ from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
-def utcnow():
+def utcnow() -> datetime:
     return datetime.now(UTC)
 
 
 class Base(DeclarativeBase):
     __abstract__ = True
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<{self.__class__.__name__} id={getattr(self, 'id', None)}>"
 
 
@@ -49,8 +49,10 @@ class DBUser(Base):
     )
 
     # Cookie
-    cookie: Mapped["DBUserCookie"] = relationship(
-        "DBUserCookie", back_populates="user", uselist=False, lazy="selectin"
+    cookie: Mapped["DBCookie"] = relationship(
+        "DBCookie",
+        lazy="selectin",
+        uselist=False,
     )
 
     # Files
@@ -68,7 +70,7 @@ class DBUser(Base):
     )
 
 
-class DBUserCookie(Base):
+class DBCookie(Base):
     __tablename__ = "cookies"
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -79,12 +81,8 @@ class DBUserCookie(Base):
         db.DateTime(timezone=True), default=utcnow
     )
 
-    # User
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), db.ForeignKey("users.id"), nullable=False
-    )
-    user: Mapped["DBUser"] = relationship(
-        "DBUser", back_populates="cookie", lazy="selectin"
     )
 
 

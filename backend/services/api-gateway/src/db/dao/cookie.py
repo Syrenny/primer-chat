@@ -2,8 +2,7 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from sqlalchemy.orm import selectinload
-from src.db.models import DBUserCookie
+from src.db.models import DBCookie
 from src.db.wrap import transactional
 
 
@@ -12,14 +11,8 @@ class DaoCookie:
     @transactional
     async def get_cookie(
         cls, session: AsyncSession, cookie_id: UUID
-    ) -> None | DBUserCookie:
-        stmt = (
-            select(DBUserCookie)
-            .filter(DBUserCookie.id == cookie_id)
-            .options(
-                selectinload(DBUserCookie.user),
-            )
-        )
+    ) -> None | DBCookie:
+        stmt = select(DBCookie).filter(DBCookie.id == cookie_id)
 
         result = await session.execute(stmt)
 
@@ -27,10 +20,8 @@ class DaoCookie:
 
     @classmethod
     @transactional
-    async def create_cookie(cls, session: AsyncSession, user_id: UUID) -> DBUserCookie:
-        cookie = DBUserCookie(
-            user_id=user_id,
-        )
+    async def create_cookie(cls, session: AsyncSession, user_id: UUID) -> DBCookie:
+        cookie = DBCookie(user_id=user_id)
         session.add(cookie)
 
         return cookie
