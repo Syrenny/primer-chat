@@ -77,20 +77,6 @@ class HistoryMessagesService:
 
 class HistoryMetaService:
     @classmethod
-    async def create_history_meta(
-        cls,
-        user_id: UUID,
-        session: AsyncSession,
-        db_files: list[DBFileMeta] = [],
-    ) -> HistoryMeta:
-        summary = HistoryMetaSummary()
-        db_history_meta = await DaoHistoryMeta.add_history_meta(
-            session=session, user_id=user_id, summary=summary, files=db_files
-        )
-
-        return HistoryMeta.from_orm(db_history_meta)
-
-    @classmethod
     async def get_history_meta(
         cls, user_id: UUID, history_id: UUID, session: AsyncSession
     ) -> HistoryMeta:
@@ -104,6 +90,22 @@ class HistoryMetaService:
         return HistoryMeta.from_orm(db_history_meta)
 
     @classmethod
+    async def create_history_meta(
+        cls,
+        user_id: UUID,
+        session: AsyncSession,
+        db_files: list[DBFileMeta] = [],
+    ) -> HistoryMeta:
+        summary = HistoryMetaSummary()
+        _db_history_meta = await DaoHistoryMeta.add_history_meta(
+            session=session, user_id=user_id, summary=summary, files=db_files
+        )
+
+        return await cls.get_history_meta(
+            session=session, user_id=user_id, history_id=_db_history_meta.id
+        )
+
+    @classmethod
     async def update_history_meta(
         cls,
         user_id: UUID,
@@ -112,7 +114,7 @@ class HistoryMetaService:
         summary: HistoryMetaSummary,
         db_files: list[DBFileMeta] = [],
     ) -> HistoryMeta | None:
-        db_history_meta = await DaoHistoryMeta.update_history_meta(
+        _db_history_meta = await DaoHistoryMeta.update_history_meta(
             session=session,
             user_id=user_id,
             history_id=history_id,
@@ -120,7 +122,9 @@ class HistoryMetaService:
             files=db_files,
         )
 
-        if not db_history_meta:
+        if not _db_history_meta:
             return None
 
-        return HistoryMeta.from_orm(db_history_meta)
+        return await cls.get_history_meta(
+            session=session, user_id=user_id, history_id=_db_history_meta.id
+        )

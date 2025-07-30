@@ -14,7 +14,7 @@ class ValidationService:
         try:
             return ValidatorResponse.model_validate_json(response)
         except ValidationError:
-            logger.warning(f"Invalid validator response: {response}")
+            logger.error(f"Invalid validator response: {response}")
             return None
 
     def _build_validator_system_prompt(self, query: str) -> str:
@@ -24,7 +24,10 @@ class ValidationService:
         system_prompt = ChatMessage(
             role="system", content=self._build_validator_system_prompt(query=query)
         )
-        response = await self.completions.create(
-            system_prompt=system_prompt,
-        )
+        params = {
+            "system_prompt": system_prompt,
+            "query": None,
+            "history": None,
+        }
+        response, _ = await self.completions.create(**params)
         return self._parse_response(response)

@@ -50,12 +50,12 @@ class SegmentationService:
 
         params = {"system_prompt": system_prompt, "query": None, "history": None}
 
-        response = await self.completions.create(**params)
+        response, usage = await self.completions.create(**params)
 
-        parsed = self.parse_from_response(response.choices[0].message.content)
+        parsed = self.parse_from_response(response)
         chunks = [ResultChunk.model_validate(chunk) for chunk in parsed]
 
-        return SegmentationResult.model_validate({"chunks": chunks}), response.usage
+        return SegmentationResult.model_validate({"chunks": chunks}), usage
 
     async def limited_segment(
         self, lines: List[LineSignature]

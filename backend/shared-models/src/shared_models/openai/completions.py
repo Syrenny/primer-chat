@@ -1,6 +1,6 @@
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict
 
 
 class ChatMessage(BaseModel):
@@ -9,14 +9,6 @@ class ChatMessage(BaseModel):
     role: Literal["system", "user", "assistant", "function"]
     content: str
     name: str | None = None
-
-
-class Choice(BaseModel):
-    model_config = ConfigDict(strict=True)
-
-    index: int
-    message: ChatMessage
-    finish_reason: str | None
 
 
 class Usage(BaseModel):
@@ -31,14 +23,3 @@ class Usage(BaseModel):
         self.completion_tokens += other.completion_tokens
         self.total_tokens += other.total_tokens
         return self
-
-
-class ChatCompletionResponse(BaseModel):
-    model_config = ConfigDict(strict=True)
-
-    index: str = Field(alias="id")
-    object: str
-    created: int
-    model: str
-    choices: list[Choice]
-    usage: Usage | None

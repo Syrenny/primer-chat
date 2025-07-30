@@ -1,61 +1,16 @@
+from datetime import UTC, datetime
 from typing import AsyncIterator
 from uuid import UUID
 
 import redis.asyncio as redis
-import redis.exceptions as redis_exceptions
-from loguru import logger
 from shared_config import config
 
 
 # TODO make _key_template = "{key_prefix}:{user_id}:{history}"
-class RedisActiveHistory:
+class RedisGenerationBuffer:
     _client: redis.Redis | None = None
-    _key_template = "{key_prefix}:{user_id}"
-
-    @classmethod
-    async def get_client(cls) -> redis.Redis:
-        if cls._client is None:
-            cls._client = redis.Redis(
-                host=config.redis.connection.host,
-                port=config.redis.connection.port,
-                db=config.redis.connection.db,
-                decode_responses=True,
-            )
-        return cls._client
-
-    @classmethod
-    def _make_key(cls, user_id: UUID) -> str:
-        return cls._key_template.format(
-            key_prefix=config.redis.active_history.key_prefix, user_id=str(user_id)
-        )
-
-    @classmethod
-    async def acquire(cls, user_id: UUID, history_id: UUID) -> bool:
-        client = await cls.get_client()
-        result = await client.set(
-            name=cls._make_key(user_id),
-            value=str(history_id),
-            ex=config.redis.active_history.ttl_seconds,
-            nx=True,  # Только если ключ НЕ существует
-        )
-        return result is not None  # True, если удалось захватить
-
-    @classmethod
-    async def release(cls, user_id: UUID) -> None:
-        client = await cls.get_client()
-        await client.delete(cls._make_key(user_id))
-
-    @classmethod
-    async def get_active(cls, user_id: UUID) -> UUID | None:
-        client = await cls.get_client()
-        value = await client.get(cls._make_key(user_id))
-        return UUID(value) if value else None
-
-
-class RedisStreamClient:
-    _client: redis.Redis | None = None
-    _group_name = "generation-workers"
-    _consumer_name = "consumer-1"
+    _chunk_key_template = "generation_buffer:{user_id}:chunks"
+    _meta_key_template = "generation_buffer:{user_id}:meta"
 
     @classmethod
     async def get_client(cls) -> redis.Redis:
@@ -70,54 +25,77 @@ class RedisStreamClient:
         return cls._client
 
     @classmethod
-    async def ensure_stream_and_group(cls) -> None:
-        """Создаёт стрим и группу, если не существует"""
+    def _chunk_key(cls, user_id: UUID) -> str:
+        return cls._chunk_key_template.format(user_id=user_id)
+
+    @classmethod
+    def _meta_key(cls, user_id: UUID) -> str:
+        return cls._meta_key_template.format(user_id=user_id)
+
+    @classmethod
+    async def init(cls, user_id: UUID, request_id: UUID, history_id: UUID) -> None:
+        client = await cls.get_client()
+        meta_key = cls._meta_key(user_id)
+
+        await client.hset(
+            meta_key,
+            mapping={
+                "request_id": str(request_id),
+                "history_id": str(history_id),
+                "started_at": datetime.now(UTC),
+            },
+        )
+        await client.expire(meta_key, config.redis.buffer.ttl_seconds)
+
+    @classmethod
+    async def load_chunks(cls, user_id: UUID) -> list[str]:
+        client = await cls.get_client()
+        return await client.lrange(cls._chunk_key(user_id), 0, -1)
+
+    @classmethod
+    async def append_chunk(cls, user_id: UUID, chunk: str) -> None:
+        client = await cls.get_client()
+        chunk_key = cls._chunk_key(user_id)
+        channel = f"generation:{user_id}"
+
+        await client.rpush(chunk_key, chunk)
+        await client.expire(chunk_key, config.redis.buffer.ttl_seconds)
+        await client.publish(channel, chunk)
+
+    @classmethod
+    async def get_request_id(cls, user_id: UUID) -> UUID | None:
+        client = await cls.get_client()
+        meta = await client.hget(cls._meta_key(user_id), "request_id")
+        return UUID(meta) if meta else None
+
+    @classmethod
+    async def clear_all(cls, user_id: UUID) -> None:
+        client = await cls.get_client()
+        await client.delete(cls._chunk_key(user_id))
+        await client.delete(cls._meta_key(user_id))
+
+    @classmethod
+    async def exists(cls, user_id: UUID) -> bool:
+        client = await cls.get_client()
+        return (await client.exists(cls._chunk_key(user_id)) == 1) and (
+            await client.exists(cls._meta_key(user_id)) == 1
+        )
+
+    @classmethod
+    async def listen(cls, user_id: UUID) -> AsyncIterator[str]:
         client = await cls.get_client()
 
-        # Попытка создать стрим и группу (safe)
+        pubsub = client.pubsub()
+        channel = f"generation:{user_id}"
+        await pubsub.subscribe(channel)
+
         try:
-            await client.xgroup_create(
-                name=config.redis.stream.key,
-                groupname=cls._group_name,
-                id="0",
-                mkstream=True,  # если стрим не существует — создать
-            )
-            logger.info(
-                f"Redis group '{cls._group_name}' created on stream '{config.redis.stream.key}'"
-            )
-        except redis_exceptions.ResponseError as e:
-            if "BUSYGROUP" in str(e):
-                pass  # группа уже существует
-            else:
-                raise
-
-    @classmethod
-    async def publish(cls, data: str) -> None:
-        client = await cls.get_client()
-        await client.xadd(config.redis.stream.key, {"data": data})
-
-    @classmethod
-    async def listen(cls) -> AsyncIterator[str]:
-        client = await cls.get_client()
-        await cls.ensure_stream_and_group()
-
-        while True:
-            response = await client.xreadgroup(
-                groupname=cls._group_name,
-                consumername=cls._consumer_name,
-                streams={config.redis.stream.key: ">"},
-                count=1,
-                block=5000,
-            )
-
-            if response:
-                stream_name, messages = response[0]
-                for msg_id, fields in messages:
-                    try:
-                        yield fields["data"]
-                        # подтвердить обработку
-                        await client.xack(
-                            config.redis.stream.key, cls._group_name, msg_id
-                        )
-                    except Exception as e:
-                        logger.exception(f"Redis: Ошибка обработки сообщения: {e}")
+            while True:
+                message = await pubsub.get_message(
+                    ignore_subscribe_messages=True, timeout=1
+                )
+                if message:
+                    yield message["data"]
+        finally:
+            await pubsub.unsubscribe(channel)
+            await pubsub.close()

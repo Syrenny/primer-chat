@@ -3,7 +3,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict
 
 from shared_models.indexation.core import IndexedChunk
-from shared_models.openai.completions import ChatCompletionResponse, ChatMessage
+from shared_models.openai.completions import ChatMessage, Usage
 from shared_models.user.persona import UserPersona
 from shared_models.worker.context import WorkerRequestContext
 
@@ -16,7 +16,6 @@ class GenerationWorkerRequest(BaseModel):
     history: list[ChatMessage]
     query: str
     chunks: list[IndexedChunk]
-    summary: str
     persona: UserPersona
 
 
@@ -26,5 +25,14 @@ class GenerationWorkerChunkResponse(BaseModel):
     context: WorkerRequestContext
 
     type: Literal["default", "error"] = "default"
-    chunk: ChatCompletionResponse
+    chunk: str
+    usage: Usage | None = None
     is_final: bool = False
+
+
+class GenerationWorkerResponse(BaseModel):
+    model_config = ConfigDict(strict=True)
+
+    context: WorkerRequestContext
+
+    stopped: bool = True

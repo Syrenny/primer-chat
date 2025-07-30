@@ -4,12 +4,13 @@ from functools import lru_cache
 
 from loguru import logger
 from pydantic import ValidationError
-from shared_adapters.redis import RedisStreamClient
+from shared_adapters.redis import RedisGenerationBuffer
 from shared_config import config
-from shared_kafka.base import BaseKafkaConsumer
+from shared_kafka.base import BaseKafkaConsumer, BaseKafkaProducer
 from shared_models.generation.interface import (
     GenerationWorkerChunkResponse,
     GenerationWorkerRequest,
+    GenerationWorkerResponse,
 )
 from src.services.generation import GenerationService
 
@@ -19,33 +20,64 @@ def get_generation_service() -> GenerationService:
     return GenerationService()
 
 
+class WorkerGenerationResultProducer(BaseKafkaProducer):
+    async def send(self, payload: GenerationWorkerResponse) -> None:
+        await self.send_json(
+            topic=config.kafka.generation.response.topic, payload=payload
+        )
+
+
 class WorkerGenerationRequestConsumer(BaseKafkaConsumer):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(
             topic=config.kafka.generation.topic,
             group_id=config.kafka.generation.group_id,
         )
 
-    async def handle_message(self, payload: dict):
+    async def handle_message(self, payload: dict) -> None:
         try:
             request = GenerationWorkerRequest.model_validate_json(payload)
         except ValidationError as err:
-            logger.error(f"[generation worker] ❌ Validation error: {err}")
+            logger.exception(f"[generation worker] ❌ Validation error: {err}")
             return
         try:
             service = get_generation_service()
-            async for chunk in service.stream(
-                request.query, request.history, request.persona
-            ):
-                response = GenerationWorkerChunkResponse(
-                    context=request.context, chunk=chunk
+            params = {
+                "query": request.query,
+                "history": request.history,
+                "persona": request.persona,
+                "chunks": request.chunks,
+            }
+            async for chunk, usage in service.stream(**params):
+                chunk_response = GenerationWorkerChunkResponse(
+                    context=request.context, chunk=chunk, usage=usage
                 )
-                await RedisStreamClient.publish(response.model_dump_json())
+                logger.debug(f"Streaming message...   {chunk}")
+                await RedisGenerationBuffer.append_chunk(
+                    user_id=request.context.user_id,
+                    chunk=chunk_response.model_dump_json(),
+                )
         except Exception as err:
-            logger.exception(f"[generation worker] 🧨 Streaming error {err}")
+            text = f"[generation worker] 🧨 Streaming error {err}"
+            chunk_response = GenerationWorkerChunkResponse(
+                type="error", context=request.context, chunk=text
+            )
+            await RedisGenerationBuffer.append_chunk(
+                user_id=request.context.user_id,
+                chunk=chunk_response.model_dump_json(),
+            )
+            logger.exception(text)
+        finally:
+            logger.info(
+                f"[generation worker] ✅ Generation completed: user_id={request.context.user_id}"
+            )
+
+            worker_response = GenerationWorkerResponse(context=request.context)
+            async with WorkerGenerationResultProducer() as producer:
+                await producer.send(worker_response)
 
 
-async def main():
+async def main() -> None:
     loop = asyncio.get_running_loop()
     stop_event = asyncio.Event()
 

@@ -10,13 +10,13 @@ from src.services.files import FileProcessor, FileService
 
 
 class IndexationResultConsumer(BaseKafkaConsumer):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(
             topic=config.kafka.indexation.response.topic,
             group_id=config.kafka.indexation.response.group_id,
         )
 
-    async def handle_message(self, payload: dict):
+    async def handle_message(self, payload: dict) -> None:
         try:
             data = IndexationWorkerResponse.model_validate_json(payload)
         except ValidationError as err:

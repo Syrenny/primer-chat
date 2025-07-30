@@ -29,7 +29,7 @@ async def create_history_meta(
         user_id=ctx.user_id, session=ctx.session, file_ids=body.file_ids
     )
 
-    history_meta = HistoryMetaService.create_history_meta(
+    history_meta = await HistoryMetaService.create_history_meta(
         session=ctx.session,
         user_id=ctx.user_id,
         db_files=db_files,
@@ -60,9 +60,10 @@ async def get_history_meta(
     ctx: RequestContext = Depends(),
     history_id: UUID = Path(..., description="UUID of the history"),
 ) -> HistoryMeta | None:
-    return HistoryMetaService.get_history_meta(
+    result = await HistoryMetaService.get_history_meta(
         user_id=ctx.user_id, session=ctx.session, history_id=history_id
     )
+    return result
 
 
 @router.delete(

@@ -4,7 +4,7 @@ import backoff
 import openai
 from asyncio_throttle import Throttler
 from shared_config import config, secrets
-from shared_models.openai.completions import ChatCompletionResponse, ChatMessage
+from shared_models.openai.completions import ChatMessage, Usage
 from shared_models.openai.embeddings import EmbeddingsResponse
 
 
@@ -52,7 +52,7 @@ class OpenAICompletionsGenerator:
     )
     async def generate(
         self, query: ChatMessage, history: list[ChatMessage], system_prompt: ChatMessage
-    ) -> AsyncIterator[ChatCompletionResponse]:
+    ) -> AsyncIterator[tuple[str, Usage]]:
         async with self.throttler:
             generator = await self.client.chat.completions.create(
                 model=config.openai.model,
@@ -63,7 +63,7 @@ class OpenAICompletionsGenerator:
             )
 
             async for chunk in generator:
-                yield ChatCompletionResponse.model_validate(chunk.model_dump())
+                yield chunk.choices[0].delta.content, chunk.usage
 
 
 class OpenAIFullCompletions:
@@ -85,7 +85,7 @@ class OpenAIFullCompletions:
         system_prompt: ChatMessage,
         history: list[ChatMessage] | None,
         query: ChatMessage | None,
-    ) -> ChatCompletionResponse:
+    ) -> tuple[str, Usage]:
         async with self.throttler:
             response = await self.client.chat.completions.create(
                 model=config.openai.model,
@@ -95,4 +95,4 @@ class OpenAIFullCompletions:
                 max_tokens=config.openai.max_tokens,
             )
 
-        return ChatCompletionResponse.model_validate(response.model_dump())
+        return response.choices[0].message.content, response.usage

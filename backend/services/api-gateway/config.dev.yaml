@@ -15,7 +15,7 @@ uvicorn:
 
 generation:
     listen_timeout_seconds: 5
-    listen_max_attempts: 100
+    listen_max_attempts: 10
     max_len_history: 10
 
 retriever:

@@ -21,7 +21,7 @@ class DaoCookie:
     @classmethod
     @transactional
     async def create_cookie(cls, session: AsyncSession, user_id: UUID) -> DBCookie:
-        cookie = DBCookie(user_id=user_id)
-        session.add(cookie)
+        db_cookie = DBCookie(user_id=user_id)
+        session.add(db_cookie)
 
-        return cookie
+        return db_cookie

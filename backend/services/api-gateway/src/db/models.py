@@ -118,6 +118,7 @@ class DBMessage(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
+    request_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
     data: Mapped[dict] = mapped_column(JSONB, nullable=False)
     timestamp: Mapped[datetime] = mapped_column(
         db.DateTime(timezone=True), default=utcnow

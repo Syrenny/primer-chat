@@ -1,23 +1,45 @@
-from typing import Literal
+from typing import Annotated, Literal, Union
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
-from shared_models.generation.interface import GenerationWorkerChunkResponse
+from pydantic import BaseModel, ConfigDict, Field
 
 
-class APICompletionsRequest(BaseModel):
-    history_id: UUID
-    query: str
+class BaseEvent(BaseModel):
+    type: str
 
     model_config = ConfigDict(json_encoders={UUID: str})
 
 
-class APICompletionsChunkResponse(BaseModel):
-    type: Literal["error", "default"] = "default"
+class CompletionsRequestEvent(BaseEvent):
+    type: Literal["request"]
+    history_id: UUID
+    query: str
+
+
+class ResumeRequestEvent(BaseEvent):
+    type: Literal["resume"]
+    history_id: UUID
+
+
+CompletionsEvent = Annotated[
+    Union[CompletionsRequestEvent, ResumeRequestEvent], Field(discriminator="type")
+]
+
+
+class BaseResponse(BaseModel):
+    type: str
+
+
+class ErrorResponse(BaseResponse):
+    type: Literal["error"]
     text: str
 
-    @classmethod
-    def from_worker_response(cls, raw: str) -> "APICompletionsChunkResponse":
-        response = GenerationWorkerChunkResponse.model_validate_json(raw)
 
-        return cls(type=response.type, text=response.chunk.choices[0].message.content)
+class BufferResponse(BaseResponse):
+    type: Literal["buffer"]
+    text: str
+
+
+class ChunkResponse(BaseResponse):
+    type: Literal["chunk"]
+    text: str

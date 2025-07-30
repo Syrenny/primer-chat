@@ -43,11 +43,13 @@ class UserService:
     async def update_user(
         cls, session: AsyncSession, user_id: UUID, persona: UserPersona
     ) -> UserDTO:
-        db_user = await DaoUser.update_user(
+        _db_user = await DaoUser.update_user(
             session=session, user_id=user_id, persona=persona
         )
-        if db_user is None:
+        if _db_user is None:
             raise UserNotFoundError(user_id)
+
+        db_user = await cls.get_user_by_id(session=session, user_id=_db_user.id)
 
         return UserDTO.from_orm(db_user)
 

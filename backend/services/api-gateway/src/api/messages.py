@@ -18,7 +18,7 @@ async def get_history_messages(
     ctx: RequestContext = Depends(),
     history_id: UUID = Path(..., description="UUID of the history"),
 ) -> list[ChatHistoryMessage]:
-    db_messages = await DaoMessages.get_messages(
+    db_messages = await DaoMessages.list_messages(
         session=ctx.session, user_id=ctx.user_id, history_id=history_id
     )
 
