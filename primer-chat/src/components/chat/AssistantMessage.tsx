@@ -8,17 +8,11 @@ interface ChatMessageProps {
 
 const AssistantMessage = ({ message }: ChatMessageProps) => {
 	return (
-		<div
-			className='flex flex-col items-start justify-start max-w-[95%]'
-			data-message-role='assistant'
-			role='presentation'
-		>
-			<div className='w-full text-gray-800 dark:text-gray-200 break-words font-sans'>
-				<div className='prose prose-p:leading-relaxed prose-p:text-[17px] dark:prose-invert prose-pre:bg-[#141414] prose-headings:font-semibold'>
-					<ReactMarkdown remarkPlugins={[remarkGfm]}>
-						{message.data.content}
-					</ReactMarkdown>
-				</div>
+		<div className='w-full'>
+			<div className='w-full text-foreground font-sans prose prose-md prose-headings:font-semibold prose-p:leading-relaxed prose-a:text-primary dark:prose-invert prose-pre:rounded-md prose-pre:bg-muted/50 prose-code:text-sm'>
+				<ReactMarkdown remarkPlugins={[remarkGfm]}>
+					{message.data.content}
+				</ReactMarkdown>
 			</div>
 		</div>
 	)

@@ -1,11 +1,7 @@
 import { v4 as uuidv4 } from 'uuid'
 import { create } from 'zustand'
 import { apiChatMessages } from '../api/history'
-import type {
-	ApiChatMessageResponse,
-	ApiHistoryRequest,
-	ClientChatMessage,
-} from '../types/chat'
+import type { ApiChatMessageResponse, ClientChatMessage } from '../types/chat'
 import { RoleType } from '../types/chat'
 interface HistoryState {
 	messages: ClientChatMessage[]
@@ -25,10 +21,7 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
 		console.log('Zustand works!')
 		set({ isHistoryLoading: true })
 		try {
-			const request: ApiHistoryRequest = {
-				history_id: history_id,
-			}
-			const history = await apiChatMessages(request)
+			const history = await apiChatMessages(history_id)
 			const clientMessages: ClientChatMessage[] = history.map(
 				(msg: ApiChatMessageResponse) => ({
 					index: msg.index ?? uuidv4(),

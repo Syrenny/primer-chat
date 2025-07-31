@@ -15,7 +15,11 @@ export const apiFileList = async (): Promise<ApiFileResponse[]> => {
 export const apiFileUpload = async (file: File): Promise<void> => {
 	const formData = new FormData()
 	formData.append('file', file)
-	await apiClient.post('/api/files', formData)
+	await apiClient.post('/api/files', formData, {
+		headers: {
+			'Content-Type': 'multipart/form-data'
+		},
+	})
 }
 
 // Получить статус обработки файла

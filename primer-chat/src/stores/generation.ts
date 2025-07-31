@@ -1,16 +1,13 @@
 import { create } from 'zustand'
 import { apiCompletionsCreate, apiCompletionsStream } from '../api/completions'
-import type {
-	ApiCompletionsChunkResponse,
-	ApiCompletionsRequest,
-} from '../types/completions'
+import type { ApiCompletionsChunkResponse } from '../types/completions'
 
 interface GenerationState {
 	isGenerating: boolean
 	isWaitingForGeneration: boolean
 	startGeneration: (
 		query: string,
-		history_id: string,
+		historyId: string,
 		opts: {
 			onData: (data: string) => void
 			onDone?: () => void
@@ -23,17 +20,16 @@ export const useGenerationStore = create<GenerationState>((set, get) => ({
 	isGenerating: false,
 	isWaitingForGeneration: false,
 
-	startGeneration: async (query, history_id, { onData, onDone, onError }) => {
+	startGeneration: async (query, historyId, { onData, onDone, onError }) => {
 		const { isGenerating, isWaitingForGeneration } = get()
 		if (isGenerating || isWaitingForGeneration) return
 
 		set({ isWaitingForGeneration: true })
 
-		const request: ApiCompletionsRequest = {
-			query: query,
-			history_id: history_id,
-		}
-		await apiCompletionsCreate(request)
+		await apiCompletionsCreate(historyId, query)
+
+        // TODO: get rid of timeout
+        await new Promise(resolve => setTimeout(resolve, 5000))
 
 		await apiCompletionsStream(
 			(chunk: ApiCompletionsChunkResponse) => {

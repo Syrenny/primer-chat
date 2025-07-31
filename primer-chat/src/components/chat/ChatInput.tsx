@@ -43,14 +43,14 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSubmit }) => {
 	}
 
 	return (
-		<div className='relative flex flex-col h-full w-full items-center rounded-3xl bg-secondary text-gray-900 dark:text-gray-300 shadow-md'>
-			<div className='flex w-full flex-1 rounded-xl border-none bg-transparent pt-5 pb-2'>
+		<div className='relative flex flex-col h-full w-full items-center rounded-4xl bg-secondary text-foreground shadow-md'>
+			<div className='flex w-full flex-1 border-none bg-transparent pt-5 pb-2'>
 				<div className='flex min-h-full w-full flex-col'>
 					<textarea
 						ref={textareaRef}
 						autoFocus
 						value={message}
-						rows={2}
+						rows={1}
 						style={{ lineHeight: '24px' }}
 						className='max-h-[6lh] w-full resize-none overflow-y-auto overflow-x-hidden border-0 bg-transparent px-6 outline-none focus:ring-0 focus-visible:ring-0 text-[18px] scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent dark:scrollbar-thumb-gray-600'
 						onChange={handleChange}
@@ -62,10 +62,9 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSubmit }) => {
 
 			<div className='flex justify-end w-full h-full px-6 pb-4'>
 				<Button
-					variant='secondary'
+					variant='ghost'
 					size='icon'
-					className='size-10'
-					style={{ backgroundColor: 'transparent' }}
+					className='size-8'
 					disabled={
 						isWaitingForGeneration ||
 						isGenerating ||
@@ -73,7 +72,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSubmit }) => {
 					}
 					onClick={handleSubmit}
 				>
-					<ArrowRight className='text-primary size-7' />
+					<ArrowRight className='text-primary size-8' />
 				</Button>
 			</div>
 		</div>

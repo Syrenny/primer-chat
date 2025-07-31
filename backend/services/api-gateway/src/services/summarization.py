@@ -12,11 +12,13 @@ class SummaryService:
         self.index = 0
 
     async def _make_summary(self, history: list[ChatMessage]) -> tuple[str, Usage]:
-        system_prompt = render_prompt(name="summarization_system.j2", context={})
+        system_prompt = render_prompt(
+            name="summarization_system.j2", context={"messages": history}
+        )
         summarizer_params = {
             "query": None,
             "system_prompt": ChatMessage(role="system", content=system_prompt),
-            "history": history,
+            "history": None,
         }
 
         return await self.summarizer.create(**summarizer_params)
@@ -29,6 +31,7 @@ class SummaryService:
             summary_response = ParsedSummaryResponse.model_validate_json(raw)
         except ValidationError as err:
             logger.error(f"Summary response validation error: {raw}")
+            logger.error(f"History: {history}")
             raise err
 
         return summary_response, usage

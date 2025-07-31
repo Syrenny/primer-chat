@@ -1,4 +1,4 @@
-import type { ApiChatMessageResponse } from '../types/chat'
+import type { ApiChatMessageResponse, ApiChatMetaResponse } from '../types/chat'
 import apiClient from './base'
 
 // Получить все сообщения по истории
@@ -10,7 +10,7 @@ export const apiChatMessages = async (
 }
 
 // Получить список чатов
-export const apiChatList = async (): Promise<ApiChatMessageResponse[]> => {
+export const apiChatList = async (): Promise<ApiChatMetaResponse[]> => {
 	const { data } = await apiClient.get('/api/history_meta')
 	return data
 }
@@ -18,7 +18,7 @@ export const apiChatList = async (): Promise<ApiChatMessageResponse[]> => {
 // Создать новый чат с файлами
 export const apiChatCreate = async (
 	fileIds: string[]
-): Promise<ApiChatMessageResponse> => {
+): Promise<ApiChatMetaResponse> => {
 	const { data } = await apiClient.post('/api/history_meta', {
 		file_ids: fileIds,
 	})
@@ -28,7 +28,7 @@ export const apiChatCreate = async (
 // Получить мета-данные конкретного чата
 export const apiChatGet = async (
 	historyId: string
-): Promise<ApiChatMessageResponse> => {
+): Promise<ApiChatMetaResponse> => {
 	const { data } = await apiClient.get(`/api/history_meta/${historyId}`)
 	return data
 }
@@ -42,7 +42,7 @@ export const apiChatDelete = async (historyId: string): Promise<void> => {
 export const apiChatUpdate = async (
 	historyId: string,
 	fileIds: string[]
-): Promise<ApiChatMessageResponse> => {
+): Promise<ApiChatMetaResponse> => {
 	const { data } = await apiClient.patch(`/api/history_meta/${historyId}`, {
 		file_ids: fileIds,
 	})

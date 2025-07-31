@@ -1,4 +1,3 @@
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useEffect } from 'react'
 import { useGenerationStore } from '../../stores/generation'
@@ -30,8 +29,8 @@ const ChatContent = ({ history_id }: ChatContentProps) => {
 	}
 
 	return (
-		<ScrollArea className='flex flex-1 flex-col w-full pb-32 pt-24 h-full'>
-			<div className='mx-auto h-full w-full max-w-[95%] max-sm:max-w-[90%]'>
+		<div className='flex flex-1 flex-col w-full pb-32 pt-24 h-full justify-center items-center'>
+			<div className='h-full w-full px-4 sm:px-6 flex flex-col justify-center'>
 				{isHistoryLoading || messages.length > 0 ? (
 					<>
 						{messages.map(msg => {
@@ -57,7 +56,7 @@ const ChatContent = ({ history_id }: ChatContentProps) => {
 					<ChatIntroduction />
 				)}
 			</div>
-		</ScrollArea>
+		</div>
 	)
 }
 

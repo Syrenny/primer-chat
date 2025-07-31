@@ -65,7 +65,7 @@ async def listen_completions(ctx: RequestContext = Depends()) -> StreamingRespon
     )
 
     return StreamingResponse(
-        content=stream(),
+        content=stream,
         media_type="text/plain",
         headers={
             "Cache-Control": "no-cache",
