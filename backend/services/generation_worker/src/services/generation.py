@@ -44,12 +44,12 @@ class GenerationService:
         history: list[ChatMessage],
         persona: UserPersona,
         chunks: list[IndexedChunk],
-    ) -> AsyncIterator[tuple[str, Usage]]:
+    ) -> AsyncIterator[tuple[str, Usage | None, bool]]:
         params: dict[str, ChatMessage | list[ChatMessage]] = {
             "query": await self.prompt_builder.user(query),
             "history": history,
             "system_prompt": self.prompt_builder.system(persona=persona, chunks=chunks),
         }
 
-        async for chunk, usage in self.completions.generate(**params):
-            yield chunk, usage
+        async for chunk, usage, is_final in self.completions.generate(**params):
+            yield chunk, usage, is_final

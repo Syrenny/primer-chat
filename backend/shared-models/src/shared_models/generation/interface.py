@@ -26,8 +26,8 @@ class GenerationWorkerChunkResponse(BaseModel):
 
     type: Literal["default", "error"] = "default"
     chunk: str
+    is_final: bool
     usage: Usage | None = None
-    is_final: bool = False
 
 
 class GenerationWorkerResponse(BaseModel):

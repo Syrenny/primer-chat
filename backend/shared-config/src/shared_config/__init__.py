@@ -68,7 +68,7 @@ class KafkaConfig(BaseModel):
     defaults: KafkaDefaults
 
     indexation: KafkaTopicPair
-    generation: KafkaConsumer
+    generation: KafkaTopicPair
 
 
 class S3Config(BaseModel):
@@ -86,19 +86,13 @@ class RedisConnectionConfig(BaseModel):
     db: int
 
 
-class RedisStreamConfig(BaseModel):
-    key: str
-
-
-class RedisActiveHistoryConfig(BaseModel):
-    key_prefix: str
+class RedisBufferConfig(BaseModel):
     ttl_seconds: int
 
 
 class RedisConfig(BaseModel):
     connection: RedisConnectionConfig
-    stream: RedisStreamConfig
-    active_history: RedisActiveHistoryConfig
+    buffer: RedisBufferConfig
 
 
 class OpenAIConfig(BaseModel):

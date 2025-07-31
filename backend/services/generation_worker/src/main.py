@@ -30,8 +30,8 @@ class WorkerGenerationResultProducer(BaseKafkaProducer):
 class WorkerGenerationRequestConsumer(BaseKafkaConsumer):
     def __init__(self) -> None:
         super().__init__(
-            topic=config.kafka.generation.topic,
-            group_id=config.kafka.generation.group_id,
+            topic=config.kafka.generation.request.topic,
+            group_id=config.kafka.generation.request.group_id,
         )
 
     async def handle_message(self, payload: dict) -> None:
@@ -48,9 +48,9 @@ class WorkerGenerationRequestConsumer(BaseKafkaConsumer):
                 "persona": request.persona,
                 "chunks": request.chunks,
             }
-            async for chunk, usage in service.stream(**params):
+            async for chunk, usage, is_final in service.stream(**params):
                 chunk_response = GenerationWorkerChunkResponse(
-                    context=request.context, chunk=chunk, usage=usage
+                    context=request.context, chunk=chunk, usage=usage, is_final=is_final
                 )
                 logger.debug(f"Streaming message...   {chunk}")
                 await RedisGenerationBuffer.append_chunk(
@@ -60,7 +60,7 @@ class WorkerGenerationRequestConsumer(BaseKafkaConsumer):
         except Exception as err:
             text = f"[generation worker] 🧨 Streaming error {err}"
             chunk_response = GenerationWorkerChunkResponse(
-                type="error", context=request.context, chunk=text
+                type="error", context=request.context, chunk=text, is_final=True
             )
             await RedisGenerationBuffer.append_chunk(
                 user_id=request.context.user_id,

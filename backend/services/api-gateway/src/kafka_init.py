@@ -1,6 +1,6 @@
 from kafka.admin import KafkaAdminClient, NewTopic
-from shared_config import config
 from loguru import logger
+from shared_config import config
 
 
 def init_kafka() -> None:
@@ -18,7 +18,12 @@ def init_kafka() -> None:
             replication_factor=config.kafka.defaults.replication_factor,
         ),
         NewTopic(
-            name=config.kafka.generation.topic,
+            name=config.kafka.generation.request.topic,
+            num_partitions=config.kafka.defaults.partitions,
+            replication_factor=config.kafka.defaults.replication_factor,
+        ),
+        NewTopic(
+            name=config.kafka.generation.response.topic,
             num_partitions=config.kafka.defaults.partitions,
             replication_factor=config.kafka.defaults.replication_factor,
         ),

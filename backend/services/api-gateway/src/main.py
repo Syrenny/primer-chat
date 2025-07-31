@@ -17,6 +17,7 @@ from src.api import (
 )
 from src.api.middleware import SessionMiddleware
 from src.config import config
+from src.consumers.generation.response import GenerationResultConsumer
 from src.consumers.indexation.response import IndexationResultConsumer
 from src.db.session import session_manager
 from src.exceptions.base import AppException
@@ -28,7 +29,10 @@ async def lifespan(app: FastAPI) -> Any:
     await to_thread.run_sync(init_kafka)
     await session_manager.init_db(run_migrations=True)
 
-    consumers: list[BaseKafkaConsumer] = [IndexationResultConsumer()]
+    consumers: list[BaseKafkaConsumer] = [
+        IndexationResultConsumer(),
+        GenerationResultConsumer(),
+    ]
 
     for consumer in consumers:
         await consumer.start()

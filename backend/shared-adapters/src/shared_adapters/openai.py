@@ -52,7 +52,7 @@ class OpenAICompletionsGenerator:
     )
     async def generate(
         self, query: ChatMessage, history: list[ChatMessage], system_prompt: ChatMessage
-    ) -> AsyncIterator[tuple[str, Usage]]:
+    ) -> AsyncIterator[tuple[str, Usage | None, bool]]:
         async with self.throttler:
             generator = await self.client.chat.completions.create(
                 model=config.openai.model,
@@ -63,7 +63,11 @@ class OpenAICompletionsGenerator:
             )
 
             async for chunk in generator:
-                yield chunk.choices[0].delta.content, chunk.usage
+                choice = chunk.choices[0]
+                text = choice.delta.content or ""
+                is_final = choice.finish_reason is not None
+
+                yield text, getattr(chunk, "usage", None), is_final
 
 
 class OpenAIFullCompletions:

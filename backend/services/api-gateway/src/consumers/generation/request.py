@@ -6,5 +6,5 @@ from shared_models.generation.interface import GenerationWorkerRequest
 class GenerationProducer(BaseKafkaProducer):
     async def send(self, payload: GenerationWorkerRequest):
         await self.send_json(
-            topic=global_config.kafka.generation.topic, payload=payload
+            topic=global_config.kafka.generation.request.topic, payload=payload
         )

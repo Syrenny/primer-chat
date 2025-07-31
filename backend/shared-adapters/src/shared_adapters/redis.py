@@ -1,4 +1,3 @@
-from datetime import UTC, datetime
 from typing import AsyncIterator
 from uuid import UUID
 
@@ -42,7 +41,6 @@ class RedisGenerationBuffer:
             mapping={
                 "request_id": str(request_id),
                 "history_id": str(history_id),
-                "started_at": datetime.now(UTC),
             },
         )
         await client.expire(meta_key, config.redis.buffer.ttl_seconds)
@@ -66,6 +64,12 @@ class RedisGenerationBuffer:
     async def get_request_id(cls, user_id: UUID) -> UUID | None:
         client = await cls.get_client()
         meta = await client.hget(cls._meta_key(user_id), "request_id")
+        return UUID(meta) if meta else None
+
+    @classmethod
+    async def get_history_id(cls, user_id: UUID) -> UUID | None:
+        client = await cls.get_client()
+        meta = await client.hget(cls._meta_key(user_id), "history_id")
         return UUID(meta) if meta else None
 
     @classmethod

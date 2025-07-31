@@ -33,8 +33,12 @@ kafka:
             group_id: 'indexation-result-handler'
 
     generation:
-        topic: 'tasks.generation'
-        group_id: 'generation-workers'
+        request:
+            topic: 'tasks.generation'
+            group_id: 'generation-workers'
+        response:
+            topic: 'results.generation'
+            group_id: 'generation-result-handler'
 
 s3:
     service_name: 's3'
@@ -50,9 +54,5 @@ redis:
         port: 6379
         db: 0
 
-    stream:
-        key: 'generation:stream'
-
-    active_history:
-        key_prefix: 'active_history'
+    buffer:
         ttl_seconds: 600
