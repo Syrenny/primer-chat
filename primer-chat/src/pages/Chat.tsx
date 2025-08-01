@@ -1,20 +1,39 @@
 import LeftSidebar from '@/components/LeftSidebar'
+import PDFViewer from '@/components/pdf-viewer/PdfViewer'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { useGenerationStore } from '@/stores/generation'
-import { useHistoryStore } from '@/stores/history'
+import { generationStore } from '@/stores/generation'
+import { historyStore } from '@/stores/history'
 import { useLayoutEffect, useRef } from 'react'
+import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels'
 import { useParams } from 'react-router-dom'
 import 'react-toastify/dist/ReactToastify.css'
+import { useStore } from 'zustand'
 import ChatContent from '../components/chat/ChatContent'
 import ChatInput from '../components/chat/ChatInput'
 import Header from '../components/Header'
 
 const Chat = () => {
 	const chatEndRef = useRef<HTMLDivElement | null>(null)
-	const { messages, addUserMessage, updateAssistantMessage } =
-		useHistoryStore()
-	const { isWaitingForGeneration, isGenerating, startGeneration } =
-		useGenerationStore()
+
+	// History store
+	const messages = useStore(historyStore, state => state.messages)
+	const addUserMessage = useStore(historyStore, state => state.addUserMessage)
+	const updateAssistantMessage = useStore(
+		historyStore,
+		state => state.updateAssistantMessage
+	)
+
+	// Generation store
+	const isGenerating = useStore(generationStore, state => state.isGenerating)
+	const isWaitingForGeneration = useStore(
+		generationStore,
+		state => state.isWaitingForGeneration
+	)
+	const startGeneration = useStore(
+		generationStore,
+		state => state.startGeneration
+	)
+
 	const { history_id } = useParams()
 
 	useLayoutEffect(() => {
@@ -38,35 +57,45 @@ const Chat = () => {
 	}
 
 	return (
-		<div className='flex flex-row h-full w-screen overflow-hidden'>
+		<div className='flex flex-row h-dvh'>
 			<LeftSidebar />
+			<PanelGroup direction='horizontal'>
+				<Panel id='pdf-panel' minSize={30}>
+					<PDFViewer
+						fileId={'be2bc0aa-2362-447c-9e0c-6a408c01158d'}
+					/>
+				</Panel>
+				<PanelResizeHandle className='w-1 bg-muted' />
+				<Panel
+					id='chat-panel'
+					className='h-dvh flex flex-col'
+					minSize={30}
+				>
+					<Header />
+					<div className='flex flex-col flex-1 items-center justify-between overflow-hidden w-full '>
+						<ScrollArea className='relative bottom-1 overflow-y-auto w-full'>
+							<div className='w-full flex flex-col justify-center items-center'>
+								{history_id && (
+									<div className='w-full max-w-3xl'>
+										<ChatContent history_id={history_id} />
+									</div>
+								)}
+							</div>
 
-			<div className='flex flex-col w-full'>
-				<Header />
+							<div ref={chatEndRef} />
+						</ScrollArea>
 
-				<div className='flex flex-col flex-1 items-center justify-between overflow-hidden'>
-					<ScrollArea className='relative bottom-1 overflow-y-auto w-full'>
-						<div className='w-full flex flex-col justify-center items-center'>
-							{history_id && (
-								<div className='w-full max-w-3xl'>
-									<ChatContent history_id={history_id} />
-								</div>
-							)}
+						<div
+							className='relative bottom-8 w-full shrink-0 bg-transparent'
+							style={{
+								maxWidth: 'min(97%, 48rem)',
+							}}
+						>
+							<ChatInput onSubmit={handleSendMessage} />
 						</div>
-
-						<div ref={chatEndRef} />
-					</ScrollArea>
-
-					<div
-						className='relative bottom-3 w-full shrink-0 bg-transparent'
-						style={{
-							maxWidth: 'min(97%, 48rem)',
-						}}
-					>
-						<ChatInput onSubmit={handleSendMessage} />
 					</div>
-				</div>
-			</div>
+				</Panel>
+			</PanelGroup>
 		</div>
 	)
 }

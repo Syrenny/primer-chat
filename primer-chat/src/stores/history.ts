@@ -1,9 +1,9 @@
 import { v4 as uuidv4 } from 'uuid'
-import { create } from 'zustand'
+import { createStore } from 'zustand'
 import { apiChatMessages } from '../api/history'
 import type { ApiChatMessageResponse, ClientChatMessage } from '../types/chat'
 import { RoleType } from '../types/chat'
-interface HistoryState {
+export interface HistoryState {
 	messages: ClientChatMessage[]
 	isHistoryLoading: boolean
 
@@ -13,12 +13,11 @@ interface HistoryState {
 	clearHistory: () => void
 }
 
-export const useHistoryStore = create<HistoryState>((set, get) => ({
+export const historyStore = createStore<HistoryState>((set, get) => ({
 	messages: [],
 	isHistoryLoading: true,
 
 	loadHistory: async history_id => {
-		console.log('Zustand works!')
 		set({ isHistoryLoading: true })
 		try {
 			const history = await apiChatMessages(history_id)
@@ -48,6 +47,7 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
 
 	updateAssistantMessage: (content: string) => {
 		set(state => {
+			console.log('Updating assistant message: ', content)
 			const prev = state.messages
 			const last = prev[prev.length - 1]
 
@@ -67,7 +67,7 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
 			// Обновляем последнее
 			const updated = {
 				...last,
-				message: {
+				data: {
 					...last.data,
 					content: last.data.content + content,
 				},

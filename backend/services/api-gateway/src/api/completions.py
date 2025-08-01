@@ -14,18 +14,32 @@ router = APIRouter()
 @router.post("/completions", tags=["Completions"])
 async def create_completions(
     request: CompletionsRequest, ctx: RequestContext = Depends()
-) -> None:
+) -> StreamingResponse:
     if await RedisGenerationBuffer.exists(user_id=ctx.user_id):
         detail = f"⛔ Generation already in progress for history_id={request.history_id}, user_id={ctx.user_id}"
         logger.warning(detail)
 
         raise HTTPException(status_code=409, detail=detail)
 
-    await GenerationService.publish(
+    request_id = await GenerationService.publish(
         user_id=ctx.user_id,
         session=ctx.session,
         history_id=request.history_id,
         query=request.query,
+    )
+
+    stream = GenerationService.stream_api_chunks(
+        user_id=ctx.user_id, history_id=request.history_id, request_id=request_id
+    )
+
+    return StreamingResponse(
+        content=stream,
+        media_type="text/plain",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
     )
 
 

@@ -4,35 +4,31 @@ import {
 } from '../types/completions'
 import apiClient from './base'
 
-// Отправка запроса на генерацию
-export const apiCompletionsCreate = async (
-	historyId: string,
-	query: string
-): Promise<void> => {
-	await apiClient.post('/api/completions', {
-		history_id: historyId,
-		query: query,
-	})
-}
-
 // Получение буфера результатов
 export const apiCompletionsBuffer = async (): Promise<void> => {
 	await apiClient.get('/api/completions/buffer')
 }
 
-// Стриминг генерации
-export const apiCompletionsStream = async (
+// Отправка запроса на генерацию и стриминг
+export const apiCompletionsCreate = async (
+	historyId: string,
+	query: string,
 	onData: (chunk: ApiCompletionsChunkResponse) => void,
 	onDone?: () => void,
 	onError?: (error: unknown) => void
 ): Promise<void> => {
+	const request = {
+		history_id: historyId,
+		query: query,
+	}
 	try {
-		const response = await fetch('/api/completions/stream', {
-			method: 'GET',
+		const response = await fetch('/api/completions', {
+			method: 'POST',
 			credentials: 'include',
 			headers: {
 				'Content-Type': 'application/json',
 			},
+			body: JSON.stringify(request),
 		})
 
 		if (!response.ok || !response.body) {

@@ -6,7 +6,7 @@ import Chat from './pages/Chat'
 
 function App() {
 	return (
-		<ThemeProvider defaultTheme='system' storageKey='primer-chat-ui-theme'>
+		<ThemeProvider>
 			<div className='h-dvh w-full'>
 				<ToastContainer position='top-right' autoClose={2000} />
 				<Routes>

@@ -1,7 +1,8 @@
 import { Button } from '@/components/ui/button'
-import { useGenerationStore } from '@/stores/generation'
-import { ArrowRight } from 'lucide-react'
+import { generationStore } from '@/stores/generation'
+import { ArrowUp } from 'lucide-react'
 import React, { useRef, useState } from 'react'
+import { useStore } from 'zustand'
 
 type ChatInputProps = {
 	onSubmit: (input: string) => void
@@ -9,7 +10,14 @@ type ChatInputProps = {
 
 const ChatInput: React.FC<ChatInputProps> = ({ onSubmit }) => {
 	const [message, setMessage] = useState('')
-	const { isWaitingForGeneration, isGenerating } = useGenerationStore()
+
+	// Generation store
+	const isWaitingForGeneration = useStore(
+		generationStore,
+		state => state.isWaitingForGeneration
+	)
+	const isGenerating = useStore(generationStore, state => state.isGenerating)
+
 	const textareaRef = useRef<HTMLTextAreaElement>(null)
 
 	const handleSubmit = (e: React.KeyboardEvent | React.MouseEvent) => {
@@ -50,7 +58,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSubmit }) => {
 						ref={textareaRef}
 						autoFocus
 						value={message}
-						rows={1}
+						rows={2}
 						style={{ lineHeight: '24px' }}
 						className='max-h-[6lh] w-full resize-none overflow-y-auto overflow-x-hidden border-0 bg-transparent px-6 outline-none focus:ring-0 focus-visible:ring-0 text-[18px] scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent dark:scrollbar-thumb-gray-600'
 						onChange={handleChange}
@@ -62,9 +70,9 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSubmit }) => {
 
 			<div className='flex justify-end w-full h-full px-6 pb-4'>
 				<Button
-					variant='ghost'
+					variant='default'
 					size='icon'
-					className='size-8'
+					className='size-8 hover:cursor-pointer'
 					disabled={
 						isWaitingForGeneration ||
 						isGenerating ||
@@ -72,7 +80,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSubmit }) => {
 					}
 					onClick={handleSubmit}
 				>
-					<ArrowRight className='text-primary size-8' />
+					<ArrowUp className='text-accent size-6' />
 				</Button>
 			</div>
 		</div>

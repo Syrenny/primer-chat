@@ -6,7 +6,7 @@ import {
 	apiFileUpload,
 } from '@/api/files'
 import type { ApiFileLinkResponse, ApiFileResponse } from '@/types/files'
-import { create } from 'zustand'
+import { createStore } from 'zustand'
 
 interface FileStoreState {
 	files: ApiFileResponse[]
@@ -20,7 +20,7 @@ interface FileStoreState {
 	getFileLink: (fileId: string) => Promise<ApiFileLinkResponse | null>
 }
 
-export const useFileStore = create<FileStoreState>((set, get) => ({
+export const fileStore = createStore<FileStoreState>((set, get) => ({
 	files: [],
 	loading: false,
 	error: null,
@@ -39,6 +39,12 @@ export const useFileStore = create<FileStoreState>((set, get) => ({
 	},
 
 	uploadFile: async (file: File) => {
+        const existing = get().files.find(f => f.filename === file.name)
+		if (existing) {
+			set({ error: `Файл с именем "${file.name}" уже загружен` })
+			return
+		}
+
 		set({ loading: true, error: null })
 		try {
 			await apiFileUpload(file)

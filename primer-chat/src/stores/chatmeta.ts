@@ -6,7 +6,7 @@ import {
 	apiChatUpdate,
 } from '@/api/history'
 import type { ApiChatMetaResponse } from '@/types/chat'
-import { create } from 'zustand'
+import { createStore } from 'zustand'
 
 interface ChatMetaStoreState {
 	chats: ApiChatMetaResponse[]
@@ -23,7 +23,7 @@ interface ChatMetaStoreState {
 	getChatById: (historyId: string) => Promise<ApiChatMetaResponse | null>
 }
 
-export const useChatMetaStore = create<ChatMetaStoreState>((set, get) => ({
+export const chatMetaStore = createStore<ChatMetaStoreState>((set, get) => ({
 	chats: [],
 	loading: false,
 	error: null,

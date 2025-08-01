@@ -4,7 +4,7 @@
 @import "tw-animate-css";
 
 .prose {
-    max-width: 60vh;
+    max-width: 70vh;
 }
 
 @theme inline {

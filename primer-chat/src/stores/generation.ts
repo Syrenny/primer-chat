@@ -1,5 +1,5 @@
-import { create } from 'zustand'
-import { apiCompletionsCreate, apiCompletionsStream } from '../api/completions'
+import { createStore } from 'zustand'
+import { apiCompletionsCreate } from '../api/completions'
 import type { ApiCompletionsChunkResponse } from '../types/completions'
 
 interface GenerationState {
@@ -16,7 +16,7 @@ interface GenerationState {
 	) => Promise<void>
 }
 
-export const useGenerationStore = create<GenerationState>((set, get) => ({
+export const generationStore = createStore<GenerationState>((set, get) => ({
 	isGenerating: false,
 	isWaitingForGeneration: false,
 
@@ -26,12 +26,9 @@ export const useGenerationStore = create<GenerationState>((set, get) => ({
 
 		set({ isWaitingForGeneration: true })
 
-		await apiCompletionsCreate(historyId, query)
-
-        // TODO: get rid of timeout
-        await new Promise(resolve => setTimeout(resolve, 5000))
-
-		await apiCompletionsStream(
+		await apiCompletionsCreate(
+			historyId,
+			query,
 			(chunk: ApiCompletionsChunkResponse) => {
 				const state = get()
 				if (state.isWaitingForGeneration)

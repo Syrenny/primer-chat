@@ -1,14 +1,14 @@
 const Header = () => {
 	return (
-		<header className='h-16 shrink-0 w-full bg-background border-b shadow-sm backdrop-blur'>
-			<div className='h-full w-full flex items-center justify-center'>
+		<header className='relative top-0 h-15 shrink-0 w-full border-b border-border bg-background select-none'>
+			<div className='h-full w-full flex items-center justify-between px-6'>
 				<div className='flex flex-col'>
-					<span className='text-xl font-semibold text-foreground tracking-tight'>
+					{/* <span className='text-xl font-semibold text-foreground tracking-tight'>
 						Primer Chat
 					</span>
 					<span className='text-xs text-muted-foreground tracking-wide'>
-						AI Talent Hub JMLC
-					</span>
+						Developed for JMLC (AI Talent Hub)
+					</span> */}
 				</div>
 			</div>
 		</header>

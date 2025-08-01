@@ -14,7 +14,7 @@ uvicorn:
     reload: true
 
 generation:
-    listen_timeout_seconds: 5
+    listen_timeout_seconds: 30
     listen_max_attempts: 10
     max_len_history: 10
 
