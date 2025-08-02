@@ -28,7 +28,7 @@ export default function UploadFileButton() {
 			variant='ghost'
 			onClick={handleUpload}
 		>
-			<Upload className='ml-4 w-4 h-4' /> Загрузить файл
+			<Upload className='ml-2 w-4 h-4' /> Загрузить файл
 		</Button>
 	)
 }

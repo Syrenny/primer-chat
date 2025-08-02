@@ -1,3 +1,5 @@
+import { ThemeToggle } from './ThemeToggle'
+
 const Header = () => {
 	return (
 		<header className='relative top-0 h-15 shrink-0 w-full border-b border-border bg-background select-none'>
@@ -9,6 +11,7 @@ const Header = () => {
 					<span className='text-xs text-muted-foreground tracking-wide'>
 						Developed for JMLC (AI Talent Hub)
 					</span> */}
+                    <ThemeToggle/>
 				</div>
 			</div>
 		</header>

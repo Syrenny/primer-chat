@@ -1,0 +1,142 @@
+@import "../../../src/index.css";
+
+
+[data-theme="dark"] {
+    --background: oklch(0.147 0.004 49.25);
+    --foreground: oklch(0.985 0.001 106.423);
+    --card: oklch(0.216 0.006 56.043);
+    --card-foreground: oklch(0.985 0.001 106.423);
+    --popover: oklch(0.216 0.006 56.043);
+    --popover-foreground: oklch(0.985 0.001 106.423);
+    --primary: oklch(0.923 0.003 48.717);
+    --primary-foreground: oklch(0.216 0.006 56.043);
+    --secondary: oklch(0.268 0.007 34.298);
+    --secondary-foreground: oklch(0.985 0.001 106.423);
+    --muted: oklch(0.268 0.007 34.298);
+    --muted-foreground: oklch(0.709 0.01 56.259);
+    --accent: oklch(0.268 0.007 34.298);
+    --accent-foreground: oklch(0.985 0.001 106.423);
+    --destructive: oklch(0.704 0.191 22.216);
+    --border: oklch(1 0 0 / 10%);
+    --input: oklch(1 0 0 / 15%);
+    --ring: oklch(0.553 0.013 58.071);
+    --chart-1: oklch(0.488 0.243 264.376);
+    --chart-2: oklch(0.696 0.17 162.48);
+    --chart-3: oklch(0.769 0.188 70.08);
+    --chart-4: oklch(0.627 0.265 303.9);
+    --chart-5: oklch(0.645 0.246 16.439);
+    --sidebar: oklch(0.216 0.006 56.043);
+    --sidebar-foreground: oklch(0.985 0.001 106.423);
+    --sidebar-primary: oklch(0.488 0.243 264.376);
+    --sidebar-primary-foreground: oklch(0.985 0.001 106.423);
+    --sidebar-accent: oklch(0.268 0.007 34.298);
+    --sidebar-accent-foreground: oklch(0.985 0.001 106.423);
+    --sidebar-border: oklch(1 0 0 / 10%);
+    --sidebar-ring: oklch(0.553 0.013 58.071);
+    --destructive-foreground: oklch(1.0000 0 0);
+    --radius: 0.75rem;
+    --font-sans: Inter, sans-serif;
+    --font-serif: Source Serif 4, serif;
+    --font-mono: JetBrains Mono, monospace;
+    --shadow-color: hsl(0 0% 0%);
+    --shadow-opacity: 0.1;
+    --shadow-blur: 3px;
+    --shadow-spread: 0px;
+    --shadow-offset-x: 0px;
+    --shadow-offset-y: 1px;
+    --letter-spacing: 0em;
+    --spacing: 0.25rem;
+    --shadow-2xs: 0px 1px 3px 0px hsl(0 0% 0% / 0.05);
+    --shadow-xs: 0px 1px 3px 0px hsl(0 0% 0% / 0.05);
+    --shadow-sm: 0px 1px 3px 0px hsl(0 0% 0% / 0.10), 0px 1px 2px -1px hsl(0 0% 0% / 0.10);
+    --shadow: 0px 1px 3px 0px hsl(0 0% 0% / 0.10), 0px 1px 2px -1px hsl(0 0% 0% / 0.10);
+    --shadow-md: 0px 1px 3px 0px hsl(0 0% 0% / 0.10), 0px 2px 4px -1px hsl(0 0% 0% / 0.10);
+    --shadow-lg: 0px 1px 3px 0px hsl(0 0% 0% / 0.10), 0px 4px 6px -1px hsl(0 0% 0% / 0.10);
+    --shadow-xl: 0px 1px 3px 0px hsl(0 0% 0% / 0.10), 0px 8px 10px -1px hsl(0 0% 0% / 0.10);
+    --shadow-2xl: 0px 1px 3px 0px hsl(0 0% 0% / 0.25);
+}
+
+:root {
+    /* 🔲 Общие цвета интерфейса */
+    --main-color: var(--foreground);
+    /* основной текст */
+    --body-bg-color: var(--secondary);
+    /* фон страницы */
+    --toolbar-bg-color: var(--secondary);
+    /* фон тулбара */
+    --toolbar-border-color: var(--border);
+    /* граница тулбара */
+    --toolbar-icon-bg-color: var(--foreground);
+    /* иконки тулбара */
+    --toolbar-icon-hover-bg-color: var(--foreground);
+    /* иконка при hover */
+
+    /* 📈 Прогресс-бар */
+    --progressBar-color: var(--accent);
+    /* активная часть */
+    --progressBar-bg-color: var(--muted);
+    /* фон */
+    --progressBar-blend-color: var(--muted)
+
+    /* 🧩 Сайдбар */
+    --sidebar-narrow-bg-color: var(--background);
+    /* фон узкого сайдбара */
+    --sidebar-toolbar-bg-color: var(--secondary);
+    /* фон тулбара в сайдбаре */
+
+    /* 🟦 Кнопки, тумблеры, выделение */
+    --toggled-btn-color: var(--foreground);
+    /* текст активной кнопки */
+    --dropdown-btn-bg-color: var(--muted);
+    /* фон дропдауна */
+
+    /* 📝 Поля */
+    --field-color: var(--foreground);
+    /* текст */
+    --field-bg-color: var(--input);
+    /* фон */
+    --field-border-color: var(--border);
+    /* граница */
+
+    /* 🌲 Элементы дерева */
+    --treeitem-color: var(--foreground);
+    /* обычный текст */
+    --treeitem-bg-color: transparent;
+    /* фон обычного */
+    --treeitem-hover-color: var(--accent-foreground);
+    /* при hover */
+    --treeitem-selected-color: var(--accent-foreground);
+    /* активный */
+    --treeitem-selected-bg-color: var(--accent);
+    /* фон активного */
+
+    /* 🖼️ Миниатюры */
+    --thumbnail-hover-color: var(--muted);
+    /* при наведении */
+    --thumbnail-selected-color: var(--accent);
+    /* при выборе */
+
+    /* 🪟 Диалоги и popover'ы */
+    --doorhanger-bg-color: var(--muted);
+    --doorhanger-border-color: var(--border);
+    --doorhanger-hover-color: var(--foreground);
+    --doorhanger-separator-color: var(--border);
+    --dialog-button-bg-color: var(--muted);
+    --dialog-button-hover-bg-color: var(--accent);
+
+    /* 🖱️ Скроллбар */
+    --scrollbar-color: var(--border);
+    --scrollbar-bg-color: var(--muted);
+}
+
+#editorModeButtons {
+    display: none !important;
+}
+
+#secondaryOpenFile {
+    display: none !important;
+}
+
+#viewBookmark {
+    display: none !important;
+}
