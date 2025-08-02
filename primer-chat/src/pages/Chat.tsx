@@ -1,6 +1,7 @@
+import ChatWindow from '@/components/chat/ChatWindow'
 import LeftSidebar from '@/components/LeftSidebar'
+import FilesModal from '@/components/modal/FilesModal'
 import PDFViewer from '@/components/pdf-viewer/PdfViewer'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { generationStore } from '@/stores/generation'
 import { historyStore } from '@/stores/history'
 import { useLayoutEffect, useRef } from 'react'
@@ -8,10 +9,6 @@ import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels'
 import { useParams } from 'react-router-dom'
 import 'react-toastify/dist/ReactToastify.css'
 import { useStore } from 'zustand'
-import ChatContent from '../components/chat/ChatContent'
-import ChatInput from '../components/chat/ChatInput'
-import Header from '../components/Header'
-
 const Chat = () => {
 	const chatEndRef = useRef<HTMLDivElement | null>(null)
 
@@ -34,7 +31,7 @@ const Chat = () => {
 		state => state.startGeneration
 	)
 
-	const { history_id } = useParams()
+	const { historyId, fileId } = useParams()
 
 	useLayoutEffect(() => {
 		chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -45,25 +42,24 @@ const Chat = () => {
 			!input.trim() ||
 			isGenerating ||
 			isWaitingForGeneration ||
-			history_id === undefined
+			historyId === undefined
 		)
 			return
 
 		addUserMessage(input)
 
-		await startGeneration(input, history_id, {
+		await startGeneration(input, historyId, {
 			onData: updateAssistantMessage,
 		})
 	}
 
 	return (
 		<div className='flex flex-row h-dvh'>
+			<FilesModal />
 			<LeftSidebar />
 			<PanelGroup direction='horizontal'>
 				<Panel id='pdf-panel' minSize={30}>
-					<PDFViewer
-						fileId={'be2bc0aa-2362-447c-9e0c-6a408c01158d'}
-					/>
+					<PDFViewer fileId={fileId} />
 				</Panel>
 				<PanelResizeHandle className='w-1 bg-muted' />
 				<Panel
@@ -71,29 +67,7 @@ const Chat = () => {
 					className='h-dvh flex flex-col'
 					minSize={30}
 				>
-					<Header />
-					<div className='flex flex-col flex-1 items-center justify-between overflow-hidden w-full '>
-						<ScrollArea className='relative bottom-1 overflow-y-auto w-full'>
-							<div className='w-full flex flex-col justify-center items-center'>
-								{history_id && (
-									<div className='w-full max-w-3xl'>
-										<ChatContent history_id={history_id} />
-									</div>
-								)}
-							</div>
-
-							<div ref={chatEndRef} />
-						</ScrollArea>
-
-						<div
-							className='relative bottom-8 w-full shrink-0 bg-transparent'
-							style={{
-								maxWidth: 'min(97%, 48rem)',
-							}}
-						>
-							<ChatInput onSubmit={handleSendMessage} />
-						</div>
-					</div>
+					<ChatWindow />
 				</Panel>
 			</PanelGroup>
 		</div>

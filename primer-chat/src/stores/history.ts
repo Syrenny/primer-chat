@@ -7,7 +7,7 @@ export interface HistoryState {
 	messages: ClientChatMessage[]
 	isHistoryLoading: boolean
 
-	loadHistory: (history_id: string) => Promise<void>
+	loadHistory: (historyId: string) => Promise<void>
 	addUserMessage: (content: string) => void
 	updateAssistantMessage: (content: string) => void
 	clearHistory: () => void
@@ -17,10 +17,10 @@ export const historyStore = createStore<HistoryState>((set, get) => ({
 	messages: [],
 	isHistoryLoading: true,
 
-	loadHistory: async history_id => {
+	loadHistory: async historyId => {
 		set({ isHistoryLoading: true })
 		try {
-			const history = await apiChatMessages(history_id)
+			const history = await apiChatMessages(historyId)
 			const clientMessages: ClientChatMessage[] = history.map(
 				(msg: ApiChatMessageResponse) => ({
 					index: msg.index ?? uuidv4(),

@@ -1,29 +1,20 @@
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { Skeleton } from '@/components/ui/skeleton'
 import { fileStore } from '@/stores/files'
-import { Minus, Plus } from 'lucide-react'
+import { uiStore } from '@/stores/ui'
+import { AlertTriangle, Menu, Minus, Plus } from 'lucide-react'
 import * as pdfjsLib from 'pdfjs-dist'
 import { useEffect, useRef, useState } from 'react'
 import { useStore } from 'zustand'
-import { Menu } from 'lucide-react'
-import { uiStore } from '@/stores/ui'
-export function SidebarToggleButton() {
-	const toggleSidebar = useStore(uiStore, s => s.toggleSidebar)
 
-	return (
-		<Button variant='ghost' size='icon' onClick={toggleSidebar}>
-			<Menu className='w-5 h-5' />
-		</Button>
-	)
-}
-
-// 👇 Устанавливаем воркер для pdf.js
+// 👇 Устанавливаем воркер
 pdfjsLib.GlobalWorkerOptions.workerSrc =
 	window.location.origin + '/pdf.worker.min.mjs'
 
 interface PDFViewerProps {
-	fileId: string
+	fileId?: string // теперь необязательный
 }
 
 export default function PDFViewer({ fileId }: PDFViewerProps) {
@@ -32,23 +23,43 @@ export default function PDFViewer({ fileId }: PDFViewerProps) {
 	const [pdf, setPdf] = useState<pdfjsLib.PDFDocumentProxy | null>(null)
 	const [scale, setScale] = useState(1.25)
 	const [pageCount, setPageCount] = useState(0)
+	const [error, setError] = useState<string | null>(null)
 
-	// Получаем временную ссылку
 	useEffect(() => {
+		if (!fileId) {
+			setError('Файл не выбран. Пожалуйста, выберете файл в меню слева.')
+			return
+		}
+
 		const fetchLink = async () => {
-			const link = await getFileLink(fileId)
-			if (link) setFileUrl(link.url.toString())
+			try {
+				const link = await getFileLink(fileId)
+				if (link) {
+					setFileUrl(link.url.toString())
+					setError(null)
+				} else {
+					setError('Не удалось получить ссылку на файл.')
+				}
+			} catch (err) {
+				console.error(err)
+				setError('Произошла ошибка при получении файла.')
+			}
 		}
 		fetchLink()
 	}, [fileId, getFileLink])
 
-	// Загружаем PDF-документ
 	useEffect(() => {
 		if (!fileUrl) return
 		const load = async () => {
-			const doc = await pdfjsLib.getDocument(fileUrl).promise
-			setPdf(doc)
-			setPageCount(doc.numPages)
+			try {
+				const doc = await pdfjsLib.getDocument(fileUrl).promise
+				setPdf(doc)
+				setPageCount(doc.numPages)
+				setError(null)
+			} catch (err) {
+				console.error(err)
+				setError('Ошибка при загрузке PDF-файла.')
+			}
 		}
 		load()
 	}, [fileUrl])
@@ -59,11 +70,11 @@ export default function PDFViewer({ fileId }: PDFViewerProps) {
 				<div className='mr-8'>
 					<SidebarToggleButton />
 				</div>
-				<div className='flex flex-col mr-auto'>
-					<span className='text-xl font-semibold text-foreground tracking-tight'>
+				<div className='flex flex-col mr-auto flex-1'>
+					<span className='text-xl font-semibold text-foreground tracking-tight contain-inline-size flex-1 truncate'>
 						Primer Chat
 					</span>
-					<span className='text-xs text-muted-foreground tracking-wide'>
+					<span className='text-xs text-muted-foreground tracking-wide contain-inline-size flex-1 truncate'>
 						Developed for JMLC (AI Talent Hub)
 					</span>
 				</div>
@@ -85,10 +96,15 @@ export default function PDFViewer({ fileId }: PDFViewerProps) {
 				</div>
 			</div>
 
-			{/* Область со всеми страницами */}
-			<ScrollArea className='flex-1 overflow-y-auto px-4'>
-				<div className='flex flex-col items-center py-4 gap-8'>
-					{pdf && pageCount > 0 ? (
+			{/* Контент */}
+			<ScrollArea className='h-full w-full pr-2 overflow-auto '>
+				<div className='flex flex-col flex-1 items-center'>
+					{error ? (
+						<Alert variant='default'>
+							<AlertTriangle className='h-4 w-4' />
+							<AlertDescription>{error}</AlertDescription>
+						</Alert>
+					) : pdf && pageCount > 0 ? (
 						Array.from({ length: pageCount }, (_, i) => (
 							<PDFPage
 								key={i}
@@ -101,14 +117,22 @@ export default function PDFViewer({ fileId }: PDFViewerProps) {
 						<Skeleton className='h-full w-full' />
 					)}
 				</div>
-				<ScrollBar orientation='vertical' />
-				<ScrollBar orientation='horizontal' />
+
+				<ScrollBar orientation='horizontal' className='h-5' />
 			</ScrollArea>
 		</div>
 	)
 }
 
-// 👇 Компонент отдельной страницы
+function SidebarToggleButton() {
+	const toggleSidebar = useStore(uiStore, s => s.toggleSidebar)
+	return (
+		<Button variant='ghost' size='icon' onClick={toggleSidebar}>
+			<Menu className='w-5 h-5' />
+		</Button>
+	)
+}
+
 function PDFPage({
 	pdf,
 	pageNumber,
@@ -126,7 +150,6 @@ function PDFPage({
 			const viewport = page.getViewport({ scale })
 			const canvas = canvasRef.current
 			if (!canvas) return
-
 			const context = canvas.getContext('2d')
 			if (!context) return
 
@@ -143,9 +166,9 @@ function PDFPage({
 	}, [pdf, pageNumber, scale])
 
 	return (
-		<div >
-			<canvas ref={canvasRef} className='' />
-			<div className='text-center text-sm text-muted-foreground mt-1'>
+		<div className='w-fit h-fit px-26 my-4'>
+			<canvas ref={canvasRef} />
+			<div className='text-center text-sm text-muted-foreground mt-2'>
 				Стр. {pageNumber}
 			</div>
 		</div>

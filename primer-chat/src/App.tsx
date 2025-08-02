@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { Route, Routes } from 'react-router-dom'
 import { ToastContainer } from 'react-toastify'
 import './App.css'
 import { ThemeProvider } from './components/ThemeProvider'
@@ -11,9 +11,10 @@ function App() {
 				<ToastContainer position='top-right' autoClose={2000} />
 				<Routes>
 					<Route path='/' element={<Chat />} />
-					<Route path='/chat' element={<Chat />} />
-					<Route path='/c/:history_id' element={<Chat />} />
-					<Route path='*' element={<Navigate to='/' />} />
+					<Route path='/c/:historyId/' element={<Chat />} />
+					<Route path='/c/:historyId/f/:fileId' element={<Chat />} />
+					<Route path='/f/:fileId/' element={<Chat />} />
+					<Route path='*' element={<Chat />} />
 				</Routes>
 			</div>
 		</ThemeProvider>

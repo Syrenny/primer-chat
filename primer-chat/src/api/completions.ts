@@ -18,7 +18,7 @@ export const apiCompletionsCreate = async (
 	onError?: (error: unknown) => void
 ): Promise<void> => {
 	const request = {
-		history_id: historyId,
+		historyId: historyId,
 		query: query,
 	}
 	try {

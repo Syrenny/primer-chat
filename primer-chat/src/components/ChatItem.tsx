@@ -4,38 +4,59 @@ import {
 	AccordionTrigger,
 } from '@/components/ui/accordion'
 import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 import { chatMetaStore } from '@/stores/chatmeta'
+import { uiStore } from '@/stores/ui'
 import type { ApiChatMetaResponse } from '@/types/chat'
-import { MinusCircle } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { useStore } from 'zustand'
+import { useChatNavigation } from '../hooks/useChatNavigation'
+import ChatFileItem from './ChatFileItem'
+import AddFilesToChatModal from './modal/AddFilesToChatModal'
+
 interface ChatItemProps {
 	chat: ApiChatMetaResponse
-	isSelected: boolean
 	onSelect: () => void
 }
 
-export default function ChatItem({
-	chat,
-	isSelected,
-	onSelect,
-}: ChatItemProps) {
-	const updateChat = useStore(chatMetaStore, state => state.updateChat)
-	const fetchChats = useStore(chatMetaStore, state => state.fetchChats)
+export default function ChatItem({ chat, onSelect }: ChatItemProps) {
+	// ChatMeta store
+	const updateChat = useStore(chatMetaStore, s => s.updateChat)
+	const fetchChats = useStore(chatMetaStore, s => s.fetchChats)
+
+	// UI store
+	const openAddFilesModal = useStore(uiStore, s => s.openAddFilesModal)
+
+	const { historyId } = useChatNavigation()
+
+	const isSelected = historyId === chat.history_id
 
 	const handleRemoveFile = async (fileId: string) => {
-		const fileIds = chat.files
+		const updated = chat.files
 			.filter(f => f.file_id !== fileId)
 			.map(f => f.file_id)
-		await updateChat(chat.history_id, fileIds)
+		await updateChat(chat.history_id, updated)
 		await fetchChats()
 	}
 
+	const handleAddFile = async () => {
+		openAddFilesModal()
+	}
+
 	return (
-		<AccordionItem value={chat.history_id}>
-			<div className='flex items-center justify-between px-2 w-full max-w-full'>
+		<AccordionItem value={chat.history_id} className='h-full w-full'>
+			<AddFilesToChatModal historyId={chat.history_id} />
+			<div
+				className={cn(
+					'flex items-center justify-between w-full max-w-full border-l-4 h-12',
+					isSelected
+						? 'border-primary bg-muted/50'
+						: 'border-transparent'
+				)}
+			>
 				<Button
-					variant={isSelected ? 'default' : 'ghost'}
-					className='items-center justify-start h-11 flex flex-1'
+					variant='ghost'
+					className='items-center justify-start h-full flex flex-1'
 					onClick={onSelect}
 				>
 					<span className='flex-1 contain-inline-size text-ellipsis truncate text-left'>
@@ -43,43 +64,34 @@ export default function ChatItem({
 							'Новый чат'}
 					</span>
 				</Button>
-				<AccordionTrigger className='hover:cursor-pointer pl-2 pr-1' title="Используемые в чате файлы"/>
+				<AccordionTrigger
+					className='hover:cursor-pointer pl-2 pr-1 py-0 h-full'
+					title='Используемые в чате файлы'
+				/>
 			</div>
 
-			<AccordionContent className='pr-2 '>
-				<span className='italic text-sm text-muted-foreground pl-6'>
-					Используемые в чате файлы:
-				</span>
-				<div className='pb-2 border-border border-l ml-6 pl-4'>
-					{chat.files.length === 0 ? (
-						<p className='text-sm text-muted-foreground'>
-							Нет файлов
-						</p>
-					) : (
+			<AccordionContent>
+				<div className='border-border border-l ml-6 '>
+					{chat.files.length > 0 &&
 						chat.files.map(file => (
-							<div
+							<ChatFileItem
 								key={file.file_id}
-								className='flex justify-between items-center mb-1 w-full'
-							>
-								<span
-									title={file.filename}
-									className='truncate contain-inline-size flex-1'
-								>
-									{file.filename}
-								</span>
-								<Button
-									variant='ghost'
-									size='icon'
-									title='Удалить файл из чата'
-									onClick={() =>
-										handleRemoveFile(file.file_id)
-									}
-								>
-									<MinusCircle className='w-8 h-8 text-destructive' />
-								</Button>
-							</div>
-						))
-					)}
+								fileId={file.file_id}
+								historyId={chat.history_id}
+								filename={file.filename}
+								selectedHistory={isSelected}
+								onRemove={() => handleRemoveFile(file.file_id)}
+							/>
+						))}
+					{/* Кнопка добавить файл */}
+					<Button
+						variant='ghost'
+						size='sm'
+						className='w-full justify-start text-muted-foreground hover:text-foreground h-11'
+						onClick={handleAddFile}
+					>
+						<Plus className='w-4 h-4' /> Добавить файл
+					</Button>
 				</div>
 			</AccordionContent>
 		</AccordionItem>
