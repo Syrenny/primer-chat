@@ -32,7 +32,7 @@ const ChatContent = ({ historyId }: ChatContentProps) => {
 	const [error, setError] = useState<string | null>(null)
 
 	useLayoutEffect(() => {
-		chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+		chatEndRef.current?.scrollIntoView({ behavior: 'auto' })
 	}, [messages])
 
 	useEffect(() => {
@@ -68,7 +68,7 @@ const ChatContent = ({ historyId }: ChatContentProps) => {
 	}
 
 	return (
-		<ScrollArea className='overflow-y-auto w-full flex-1 h-full flex mb-30'>
+		<ScrollArea className='overflow-y-auto w-full flex-1 h-full flex'>
 			<div className='h-full w-full flex flex-col justify-center items-center'>
 				<div className='w-full max-w-3xl h-full '>
 					<div className='flex flex-col w-full pt-6 pb-24 space-y-8 px-3'>

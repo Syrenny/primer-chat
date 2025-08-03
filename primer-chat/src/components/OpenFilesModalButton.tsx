@@ -12,7 +12,7 @@ export function OpenFilesModalButton() {
 			variant='ghost'
 			onClick={open}
 		>
-			<FileText className='ml-2 w-6 h-6' /> Мои файлы
+			<FileText className='w-6 h-6' /> Мои файлы
 		</Button>
 	)
 }

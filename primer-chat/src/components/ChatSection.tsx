@@ -7,11 +7,17 @@ import { useChatNavigation } from '../hooks/useChatNavigation'
 import ChatItem from './ChatItem'
 import CreateChatButton from './CreateChatButton'
 import { OpenFilesModalButton } from './OpenFilesModalButton'
+import { uiStore } from '@/stores/ui'
+
+
 
 export default function ChatSection() {
 	// ChatMeta store
 	const chats = useStore(chatMetaStore, state => state.chats)
 	const fetchChats = useStore(chatMetaStore, state => state.fetchChats)
+
+    const openedChatIds = useStore(uiStore, s => s.openedChatIds)
+	const setOpenedChatIds = useStore(uiStore, s => s.setOpenedChatIds)
 
 	const { goToChat } = useChatNavigation()
 
@@ -24,14 +30,19 @@ export default function ChatSection() {
 	}
 
 	return (
-		<div className='flex-1 overflow-auto w-full'>
+		<div className='flex-1 overflow-auto w-full pl-2'>
 			<OpenFilesModalButton />
 			<CreateChatButton />
-			<h3 className='text-md font-normal px-4 pt-4 pb-2 text-muted-foreground select-none'>
+			<h3 className='text-md font-normal pt-4 pb-2 text-muted-foreground select-none'>
 				Чаты
 			</h3>
 			<ScrollArea className='pb-4 w-full'>
-				<Accordion type='multiple' className='w-full'>
+				<Accordion
+					type='multiple'
+					value={openedChatIds}
+					onValueChange={setOpenedChatIds}
+					className='w-full'
+				>
 					{chats.map(chat => (
 						<ChatItem
 							key={chat.history_id}

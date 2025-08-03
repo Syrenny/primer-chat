@@ -21,13 +21,22 @@ export function ThemeToggle() {
 				</Button>
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align='end'>
-				<DropdownMenuItem onClick={() => setTheme('light')}>
+				<DropdownMenuItem
+					onClick={() => setTheme('light')}
+					className='hover:cursor-pointer'
+				>
 					<Sun className='mr-2 h-4 w-4' /> Светлая
 				</DropdownMenuItem>
-				<DropdownMenuItem onClick={() => setTheme('dark')}>
+				<DropdownMenuItem
+					onClick={() => setTheme('dark')}
+					className='hover:cursor-pointer'
+				>
 					<Moon className='mr-2 h-4 w-4' /> Тёмная
 				</DropdownMenuItem>
-				<DropdownMenuItem onClick={() => setTheme('system')}>
+				<DropdownMenuItem
+					onClick={() => setTheme('system')}
+					className='hover:cursor-pointer'
+				>
 					<Laptop className='mr-2 h-4 w-4' /> Системная
 				</DropdownMenuItem>
 			</DropdownMenuContent>

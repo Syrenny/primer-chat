@@ -2,7 +2,6 @@ import { generationStore } from '@/stores/generation'
 import { historyStore } from '@/stores/history'
 import { useParams } from 'react-router-dom'
 import { useStore } from 'zustand'
-import Header from '../Header'
 import ChatContent from './ChatContent'
 import ChatInput from './ChatInput'
 
@@ -22,8 +21,6 @@ export default function ChatWindow() {
 	)
 	const startGeneration = useStore(generationStore, s => s.startGeneration)
 
-
-
 	const handleSendMessage = async (input: string) => {
 		if (
 			!input.trim() ||
@@ -40,18 +37,14 @@ export default function ChatWindow() {
 	}
 
 	return (
-		<div className='h-dvh flex flex-col'>
-			<Header />
+		<div className='relative flex flex-col flex-1 items-center justify-between w-full h-full pb-30'>
+			<ChatContent historyId={historyId} />
 
-			<div className='relative flex flex-col flex-1 items-center justify-between overflow-hidden w-full h-full'>
-				<ChatContent historyId={historyId} />
-
-				<div
-					className='absolute bottom-8 w-full shrink-0 bg-transparent'
-					style={{ maxWidth: 'min(97%, 48rem)' }}
-				>
-					<ChatInput onSubmit={handleSendMessage} />
-				</div>
+			<div
+				className='absolute bottom-6 w-full shrink-0 bg-transparent'
+				style={{ maxWidth: 'min(97%, 48rem)' }}
+			>
+				<ChatInput onSubmit={handleSendMessage} />
 			</div>
 		</div>
 	)

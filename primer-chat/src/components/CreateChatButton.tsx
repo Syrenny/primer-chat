@@ -21,7 +21,7 @@ export default function CreateChatButton() {
 			variant='ghost'
 			onClick={handleCreateChat}
 		>
-			<MessageSquarePlus className='ml-2 w-6 h-6' /> Новый чат
+			<MessageSquarePlus className='w-6 h-6' /> Новый чат
 		</Button>
 	)
 }

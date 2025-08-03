@@ -44,7 +44,7 @@ export default function ChatItem({ chat, onSelect }: ChatItemProps) {
 	}
 
 	return (
-		<AccordionItem value={chat.history_id} className='h-full w-full'>
+		<AccordionItem value={chat.history_id} className='h-full w-full border-none'>
 			<AddFilesToChatModal historyId={chat.history_id} />
 			<div
 				className={cn(
@@ -65,13 +65,13 @@ export default function ChatItem({ chat, onSelect }: ChatItemProps) {
 					</span>
 				</Button>
 				<AccordionTrigger
-					className='hover:cursor-pointer pl-2 pr-1 py-0 h-full'
+					className='hover:cursor-pointer pl-2 pr-2 py-0 h-full'
 					title='Используемые в чате файлы'
 				/>
 			</div>
 
 			<AccordionContent>
-				<div className='border-border border-l ml-6 '>
+				<div className='border-border border-l ml-3 '>
 					{chat.files.length > 0 &&
 						chat.files.map(file => (
 							<ChatFileItem

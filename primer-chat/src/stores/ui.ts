@@ -1,10 +1,13 @@
 import { createStore } from 'zustand'
+import { persist } from 'zustand/middleware'
 
 interface UIState {
 	isSidebarOpen: boolean
 	isFilesModalOpen: boolean
 	isAddFilesModalOpen: boolean
+	openedChatIds: string[]
 
+	setOpenedChatIds: (ids: string[]) => void
 	openSidebar: () => void
 	closeSidebar: () => void
 	toggleSidebar: () => void
@@ -17,20 +20,33 @@ interface UIState {
 	closeAddFilesModal: () => void
 }
 
-export const uiStore = createStore<UIState>(set => ({
-	isSidebarOpen: true,
-	isFilesModalOpen: false,
-	isAddFilesModalOpen: false,
+export const uiStore = createStore(
+	persist<UIState>(
+		(set, get) => ({
+			isSidebarOpen: true,
+			isFilesModalOpen: false,
+			isAddFilesModalOpen: false,
+			openedChatIds: [],
 
-	openSidebar: () => set({ isSidebarOpen: true }),
-	closeSidebar: () => set({ isSidebarOpen: false }),
-	toggleSidebar: () => set(s => ({ isSidebarOpen: !s.isSidebarOpen })),
+			setOpenedChatIds: ids => set({ openedChatIds: ids }),
 
-	openFilesModal: () => set({ isFilesModalOpen: true }),
-	closeFilesModal: () => set({ isFilesModalOpen: false }),
-	toggleFilesModal: () =>
-		set(s => ({ isFilesModalOpen: !s.isFilesModalOpen })),
+			openSidebar: () => set({ isSidebarOpen: true }),
+			closeSidebar: () => set({ isSidebarOpen: false }),
+			toggleSidebar: () =>
+				set(state => ({ isSidebarOpen: !state.isSidebarOpen })),
 
-	openAddFilesModal: () => set({ isAddFilesModalOpen: true }),
-	closeAddFilesModal: () => set({ isAddFilesModalOpen: false }),
-}))
+			openFilesModal: () => set({ isFilesModalOpen: true }),
+			closeFilesModal: () => set({ isFilesModalOpen: false }),
+			toggleFilesModal: () =>
+				set(state => ({
+					isFilesModalOpen: !state.isFilesModalOpen,
+				})),
+
+			openAddFilesModal: () => set({ isAddFilesModalOpen: true }),
+			closeAddFilesModal: () => set({ isAddFilesModalOpen: false }),
+		}),
+		{
+			name: 'ui-storage',
+		}
+	)
+)
