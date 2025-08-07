@@ -14,6 +14,7 @@ from src.api import (
     files_router,
     history_meta_router,
     messages_router,
+    retriever_router,
 )
 from src.api.middleware import SessionMiddleware
 from src.config import config
@@ -70,6 +71,7 @@ app.include_router(completions_router, prefix=prefix)
 app.include_router(files_router, prefix=prefix)
 app.include_router(history_meta_router, prefix=prefix)
 app.include_router(messages_router, prefix=prefix)
+app.include_router(retriever_router, prefix=prefix)
 
 
 if __name__ == "__main__":

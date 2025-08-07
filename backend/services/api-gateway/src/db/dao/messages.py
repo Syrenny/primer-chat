@@ -3,28 +3,12 @@ from uuid import UUID
 import sqlalchemy as db
 from shared_models.openai.completions import ChatMessage
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.db.models import DBMessage
+from sqlalchemy.orm import selectinload
+from src.db.models import DBChunk, DBGenerationRequest, DBMessage
 from src.db.wrap import transactional
 
 
 class DaoMessages:
-    @classmethod
-    @transactional
-    async def get_message_by_id(
-        cls, session: AsyncSession, user_id: UUID, history_id: UUID, message_id: UUID
-    ) -> DBMessage | None:
-        stmt = (
-            db.select(DBMessage)
-            .filter(
-                DBMessage.user_id == user_id,
-                DBMessage.history_id == history_id,
-                DBMessage.id == message_id,
-            )
-            .order_by(DBMessage.timestamp)
-        )
-        result = await session.execute(stmt)
-        return result.scalars().first()
-
     @classmethod
     @transactional
     async def add_message(
@@ -34,12 +18,14 @@ class DaoMessages:
         history_id: UUID,
         data: ChatMessage,
         request_id: UUID,
+        chunks: list[DBChunk],
     ) -> DBMessage:
         db_message = DBMessage(
             user_id=user_id,
             history_id=history_id,
             data=data.model_dump(),
             request_id=request_id,
+            chunks=chunks,
         )
 
         session.add(db_message)
@@ -52,9 +38,25 @@ class DaoMessages:
         cls, session: AsyncSession, user_id: UUID, history_id: UUID
     ) -> list[DBMessage]:
         stmt = (
-            db.select(DBMessage)
-            .filter(DBMessage.user_id == user_id, DBMessage.history_id == history_id)
-            .order_by(DBMessage.timestamp)
+            db.select(DBGenerationRequest)
+            .filter(
+                DBGenerationRequest.user_id == user_id,
+                DBGenerationRequest.history_id == history_id,
+            )
+            .order_by(DBGenerationRequest.timestamp)
+            .options(
+                selectinload(DBGenerationRequest.user_message),
+                selectinload(DBGenerationRequest.assistant_message),
+            )
         )
+
         result = await session.execute(stmt)
-        return result.scalars().all()
+        requests = result.scalars().all()
+
+        messages: list[DBMessage] = []
+        for req in requests:
+            if req.user_message:
+                messages.append(req.user_message)
+            if req.assistant_message:
+                messages.append(req.assistant_message)
+        return messages

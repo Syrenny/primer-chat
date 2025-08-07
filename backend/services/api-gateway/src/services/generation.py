@@ -17,7 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.config import config as local_config
 from src.consumers.generation.request import GenerationProducer
 from src.exceptions.generation import GenerationWorkerError
-from src.models.dto.completions import ApiChunkResponse
+from src.models.dto.completions import ApiChunkCompletionsResponse
 from src.services.history import HistoryMessagesService
 from src.services.messages import MessageService
 from src.services.retriever import RetrieveService
@@ -146,14 +146,17 @@ class GenerationService:
         async with aclosing(generator) as _generator:
             try:
                 async for chunk in _generator:
-                    yield ApiChunkResponse(text=chunk).model_dump_json() + "\n\n"
+                    yield (
+                        ApiChunkCompletionsResponse(text=chunk).model_dump_json()
+                        + "\n\n"
+                    )
             except asyncio.CancelledError:
                 logger.info(
                     f"🚫 Client disconnected (user={user_id}, history={history_id})"
                 )
             except Exception as err:
                 logger.exception(f"💥 Unhandled exception in stream: {err}")
-                error_response = ApiChunkResponse(
+                error_response = ApiChunkCompletionsResponse(
                     type="error", text="Internal server error"
                 )
                 yield error_response.model_dump_json() + "\n\n"

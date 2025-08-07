@@ -9,8 +9,8 @@ interface ChatMessageProps {
 const sampleChunks = [
 	{
 		id: 'chunk-1',
-		page: 12,
-		documentName: 'Основы машинного обучения',
+		page: 3,
+		documentName: 'attention-is-all-you-need.pdf',
 		preview:
 			'…глубинное обучение использует многослойные нейронные сети для извлечения признаков…',
 		onClick: () => console.log('Перейти к chunk-1'),
@@ -18,61 +18,15 @@ const sampleChunks = [
 	{
 		id: 'chunk-2',
 		page: 5,
-		documentName: 'Введение в нейросети',
+		documentName: 'attention-is-all-you-need.pdf',
 		preview:
 			'…функция активации определяет выход нейрона в зависимости от входных данных…',
 		onClick: () => console.log('Перейти к chunk-2'),
 	},
 	{
 		id: 'chunk-3',
-		page: 22,
-		documentName: 'Математический анализ',
-		preview: '…градиент показывает направление наибольшего роста функции…',
-		onClick: () => console.log('Перейти к chunk-3'),
-	},
-	{
-		id: 'chunk-1',
-		page: 12,
-		documentName: 'Основы машинного обучения',
-		preview:
-			'…глубинное обучение использует многослойные нейронные сети для извлечения признаков…',
-		onClick: () => console.log('Перейти к chunk-1'),
-	},
-	{
-		id: 'chunk-2',
-		page: 5,
-		documentName: 'Введение в нейросети',
-		preview:
-			'…функция активации определяет выход нейрона в зависимости от входных данных…',
-		onClick: () => console.log('Перейти к chunk-2'),
-	},
-	{
-		id: 'chunk-3',
-		page: 22,
-		documentName: 'Математический анализ',
-		preview: '…градиент показывает направление наибольшего роста функции…',
-		onClick: () => console.log('Перейти к chunk-3'),
-	},
-	{
-		id: 'chunk-1',
-		page: 12,
-		documentName: 'Основы машинного обучения',
-		preview:
-			'…глубинное обучение использует многослойные нейронные сети для извлечения признаков…',
-		onClick: () => console.log('Перейти к chunk-1'),
-	},
-	{
-		id: 'chunk-2',
-		page: 5,
-		documentName: 'Введение в нейросети',
-		preview:
-			'…функция активации определяет выход нейрона в зависимости от входных данных…',
-		onClick: () => console.log('Перейти к chunk-2'),
-	},
-	{
-		id: 'chunk-3',
-		page: 22,
-		documentName: 'Математический анализ',
+		page: 6,
+		documentName: 'attention-is-all-you-need.pdf',
 		preview: '…градиент показывает направление наибольшего роста функции…',
 		onClick: () => console.log('Перейти к chunk-3'),
 	},

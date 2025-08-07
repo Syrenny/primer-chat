@@ -7,6 +7,7 @@ from shared_models.generation.interface import GenerationWorkerChunkResponse
 from shared_models.openai.completions import ChatMessage
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.db.dao import DaoMessages
+from src.db.models import DBChunk
 
 
 class MessageService:
@@ -27,6 +28,7 @@ class MessageService:
             history_id=history_id,
             data=chat_message,
             request_id=request_id,
+            chunks=[],
         )
 
     @classmethod
@@ -37,6 +39,7 @@ class MessageService:
         session: AsyncSession,
         request_id: UUID,
         content: str,
+        chunks: list[DBChunk],
     ) -> None:
         chat_message = ChatMessage(role="assistant", content=content)
 
@@ -46,6 +49,7 @@ class MessageService:
             history_id=history_id,
             request_id=request_id,
             data=chat_message,
+            chunks=chunks,
         )
 
     @classmethod

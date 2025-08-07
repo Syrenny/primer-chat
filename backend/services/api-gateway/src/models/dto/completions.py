@@ -1,8 +1,12 @@
-from typing import Literal
+from typing import Literal, Union
 from uuid import UUID
 
 from pydantic import BaseModel
-from shared_models.generation.interface import GenerationWorkerChunkResponse
+from shared_models.indexation.core import IndexedChunk
+
+
+class ApiBufferResponse(BaseModel):
+    buffer: str
 
 
 class CompletionsRequest(BaseModel):
@@ -10,16 +14,23 @@ class CompletionsRequest(BaseModel):
     query: str
 
 
-class ApiBufferResponse(BaseModel):
-    buffer: str
+class ErrorChunk(BaseModel):
+    type: Literal["error"]
+    chunk: str
 
 
-class ApiChunkResponse(BaseModel):
-    type: Literal["error", "default"] = "default"
-    text: str
+class DefaultChunk(BaseModel):
+    type: Literal["default"]
+    chunk: str
 
-    @classmethod
-    def from_worker_response(cls, raw: str) -> "ApiChunkResponse":
-        response = GenerationWorkerChunkResponse.model_validate_json(raw)
 
-        return cls(type=response.type, text=response.chunk)
+class RetrievedChunk(BaseModel):
+    type: Literal["retrieved"]
+    chunk: IndexedChunk
+
+
+ApiChunkCompletionsResponse = Union[
+    ErrorChunk,
+    DefaultChunk,
+    RetrievedChunk,
+]

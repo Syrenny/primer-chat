@@ -1,4 +1,3 @@
-// components/pdf-viewer/PdfViewer.tsx
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Skeleton } from '@/components/ui/skeleton'
 import { fileStore } from '@/stores/files'

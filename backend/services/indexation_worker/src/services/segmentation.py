@@ -4,7 +4,7 @@ import re
 from typing import List, get_args
 
 from shared_adapters.openai import OpenAIFullCompletions
-from shared_models.indexation.segmentation import (
+from shared_models.indexation.core import (
     HTMLTag,
     LineSignature,
     ResultChunk,

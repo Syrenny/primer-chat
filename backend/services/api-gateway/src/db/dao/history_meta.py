@@ -3,7 +3,7 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
-from src.db.models import DBFileMeta, DBHistoryMeta
+from src.db.models import DBFileMeta, DBGenerationRequest, DBHistoryMeta
 from src.db.wrap import transactional
 from src.models.dto.history import HistoryMetaSummary
 
@@ -20,7 +20,7 @@ class DaoHistoryMeta:
                 DBHistoryMeta.user_id == user_id,
             )
             .options(
-                selectinload(DBHistoryMeta.messages),
+                selectinload(DBHistoryMeta.requests),
                 selectinload(DBHistoryMeta.files),
             )
         )
@@ -64,7 +64,7 @@ class DaoHistoryMeta:
             select(DBHistoryMeta)
             .filter(DBHistoryMeta.user_id == user_id, DBHistoryMeta.id == history_id)
             .options(
-                selectinload(DBHistoryMeta.messages),
+                selectinload(DBHistoryMeta.requests),
                 selectinload(DBHistoryMeta.files),
             )
         )
@@ -99,6 +99,7 @@ class DaoHistoryMeta:
         history_id: UUID,
         summary: HistoryMetaSummary | None = None,
         files: list[DBFileMeta] | None = None,
+        requests: list[DBGenerationRequest] | None = None,
     ) -> DBHistoryMeta | None:
         db_history_meta = await cls.get_history_meta(
             session=session, user_id=user_id, history_id=history_id
@@ -112,5 +113,8 @@ class DaoHistoryMeta:
 
         if files:
             db_history_meta.files = files
+
+        if requests:
+            db_history_meta.requests = requests
 
         return db_history_meta

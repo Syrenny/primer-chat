@@ -25,9 +25,7 @@ class DaoChunks:
                 content=chunk.content,
                 embedding=chunk.embedding,
                 html_tag=chunk.html_tag,
-                xyxy=chunk.position.xyxy,
-                start_line=chunk.position.start_line,
-                end_line=chunk.position.end_line,
+                positions=[pos.model_dump() for pos in chunk.position],
             )
             for chunk in chunks
         ]
@@ -61,3 +59,22 @@ class DaoChunks:
         await session.execute(
             db.delete(DBChunk).filter_by(user_id=user_id, file_id=file_id)
         )
+
+    @classmethod
+    @transactional
+    async def get_chunks_by_ids(
+        cls,
+        session: AsyncSession,
+        user_id: UUID,
+        chunk_ids: list[UUID],
+    ) -> list[DBChunk]:
+        """Возвращает принадлежащие пользователю чанки по их ID."""
+        if not chunk_ids:
+            return []
+
+        result = await session.execute(
+            db.select(DBChunk).filter(
+                DBChunk.user_id == user_id, DBChunk.id.in_(chunk_ids)
+            )
+        )
+        return result.scalars().all()

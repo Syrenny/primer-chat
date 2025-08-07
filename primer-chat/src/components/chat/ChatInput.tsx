@@ -68,11 +68,11 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSubmit }) => {
 				</div>
 			</div>
 
-			<div className='flex justify-end w-full h-full px-6 pb-4'>
+			<div className='flex justify-end w-full h-fit px-6 pb-4'>
 				<Button
 					variant='default'
 					size='icon'
-					className='size-8 hover:cursor-pointer'
+					className='hover:cursor-pointer size-8'
 					disabled={
 						isWaitingForGeneration ||
 						isGenerating ||

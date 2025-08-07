@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 import sqlalchemy as db
 from pgvector.sqlalchemy import Vector
 from shared_config import config
-from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -32,6 +32,23 @@ history_file_association = db.Table(
         "file_id",
         UUID(as_uuid=True),
         db.ForeignKey("file_meta.id"),
+        primary_key=True,
+    ),
+)
+
+request_chunk_association = db.Table(
+    "request_chunk_association",
+    Base.metadata,
+    db.Column(
+        "request_id",
+        UUID(as_uuid=True),
+        db.ForeignKey("generation_requests.id"),
+        primary_key=True,
+    ),
+    db.Column(
+        "chunk_id",
+        UUID(as_uuid=True),
+        db.ForeignKey("chunks.id"),
         primary_key=True,
     ),
 )
@@ -112,14 +129,12 @@ class DBFileMeta(Base):
     )
 
 
-class DBMessage(Base):
-    __tablename__ = "messages"
+class DBGenerationRequest(Base):
+    __tablename__ = "generation_requests"
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
-    request_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
-    data: Mapped[dict] = mapped_column(JSONB, nullable=False)
     timestamp: Mapped[datetime] = mapped_column(
         db.DateTime(timezone=True), default=utcnow
     )
@@ -134,6 +149,35 @@ class DBMessage(Base):
         UUID(as_uuid=True), db.ForeignKey("users.id"), nullable=False
     )
 
+    retrieved_chunks: Mapped[list["DBChunk"]] = relationship(
+        secondary=request_chunk_association,
+        lazy="selectin",
+    )
+
+    user_message: Mapped["DBMessage"] = relationship(
+        "DBMessage",
+        lazy="selectin",
+        uselist=False,
+    )
+
+    assistant_message: Mapped["DBMessage"] = relationship(
+        "DBMessage", lazy="selectin", uselist=False
+    )
+
+
+class DBMessage(Base):
+    __tablename__ = "messages"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    data: Mapped[dict] = mapped_column(JSONB, nullable=False)
+
+    # Generation request
+    request_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), db.ForeignKey("generation_requests.id"), nullable=False
+    )
+
 
 class DBChunk(Base):
     __tablename__ = "chunks"
@@ -144,9 +188,9 @@ class DBChunk(Base):
     content: Mapped[str] = mapped_column(db.Text, nullable=False)
     embedding: Mapped[list[float]] = mapped_column(Vector(config.embeddings.dimensions))
     html_tag: Mapped[str] = mapped_column(db.String, nullable=False)
-    xyxy: Mapped[list[float]] = mapped_column(ARRAY(db.Float), nullable=False)
-    start_line: Mapped[int] = mapped_column(db.Integer, nullable=False)
-    end_line: Mapped[int] = mapped_column(db.Integer, nullable=False)
+    positions: Mapped[list[dict]] = mapped_column(
+        JSONB, nullable=False, comment="List[PdfLinePosition]"
+    )
     created_at: Mapped[datetime] = mapped_column(
         db.DateTime(timezone=True), default=utcnow
     )
@@ -169,15 +213,14 @@ class DBHistoryMeta(Base):
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
     summary: Mapped[dict] = mapped_column(JSONB, nullable=False)
-    # HistoryMetaSummary
 
     # User
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), db.ForeignKey("users.id"), nullable=False
     )
 
-    # Messages
-    messages: Mapped[list["DBMessage"]] = relationship(
+    # Generation requests
+    requests: Mapped[list["DBGenerationRequest"]] = relationship(
         cascade="all, delete-orphan", lazy="selectin"
     )
 

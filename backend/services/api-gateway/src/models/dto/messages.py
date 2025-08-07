@@ -3,7 +3,7 @@ from uuid import UUID
 
 from pydantic import BaseModel
 from shared_models.openai.completions import ChatMessage
-from src.db.models import DBMessage
+from src.db.models import DBGenerationRequest, DBMessage
 
 
 class ChatHistoryMessage(BaseModel):
@@ -22,6 +22,24 @@ class ChatHistoryMessage(BaseModel):
     @classmethod
     def from_orm_list(cls, db_messages: list[DBMessage]) -> list["ChatHistoryMessage"]:
         return [cls.from_orm(db_message) for db_message in db_messages]
+
+    @classmethod
+    def from_db_request(
+        cls, db_request: DBGenerationRequest
+    ) -> list["ChatHistoryMessage"]:
+        return [
+            cls.from_orm(msg)
+            for msg in (db_request.user_message, db_request.assistant_message)
+            if msg is not None
+        ]
+
+    @classmethod
+    def from_db_requests(cls, db_requests: list) -> list["ChatHistoryMessage"]:
+        messages: list[ChatHistoryMessage] = []
+        for req in db_requests:
+            messages.extend(cls.from_db_request(req))
+
+        return messages
 
     @classmethod
     def to_chat_messages(

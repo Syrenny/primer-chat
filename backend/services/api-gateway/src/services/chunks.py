@@ -2,7 +2,7 @@ from functools import lru_cache
 from uuid import UUID
 
 from shared_adapters.openai import Embeddings
-from shared_models.indexation.core import ChunkPosition, IndexedChunk
+from shared_models.indexation.core import IndexedChunk, PdfLinePosition
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.db.dao import DaoChunks
 from src.db.models import DBChunk
@@ -36,11 +36,9 @@ class ChunkService:
                 content=db_chunk.content,
                 embedding=db_chunk.embedding.tolist(),
                 html_tag=db_chunk.html_tag,
-                position=ChunkPosition(
-                    xyxy=db_chunk.xyxy,
-                    start_line=db_chunk.start_line,
-                    end_line=db_chunk.end_line,
-                ),
+                position=[
+                    PdfLinePosition.model_validate(pos) for pos in db_chunk.position
+                ],
             )
             for db_chunk in db_chunks
         ]
@@ -69,4 +67,12 @@ class ChunkService:
     ) -> None:
         await DaoChunks.delete_file_chunks(
             session=session, user_id=user_id, file_id=file_id
+        )
+
+    @classmethod
+    async def from_ids(
+        cls, user_id: UUID, session: AsyncSession, ids: list[UUID]
+    ) -> list[DBChunk]:
+        return await DaoChunks.get_chunks_by_ids(
+            session=session, user_id=user_id, chunk_ids=ids
         )

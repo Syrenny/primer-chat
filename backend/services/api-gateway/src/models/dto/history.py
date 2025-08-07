@@ -23,7 +23,7 @@ class HistoryMeta(BaseModel):
             history_id=db_history_meta.id,
             summary=HistoryMetaSummary.model_validate(db_history_meta.summary),
             files=FileMeta.from_orm_list(db_history_meta.files),
-            messages=ChatHistoryMessage.from_orm_list(db_history_meta.messages),
+            messages=ChatHistoryMessage.from_db_requests(db_history_meta.requests),
         )
 
     @classmethod
