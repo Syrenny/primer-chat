@@ -1,8 +1,8 @@
 from .chunks import DaoChunks
+from .cookie import DaoCookie
 from .file_meta import DaoFileMeta
 from .history_meta import DaoHistoryMeta
-from .messages import DaoMessages
-from .cookie import DaoCookie
+from .request import DaoRequest
 from .user import DaoUser
 
 __all__ = [
@@ -11,5 +11,5 @@ __all__ = [
     "DaoHistoryMeta",
     "DaoCookie",
     "DaoUser",
-    "DaoMessages",
+    "DaoRequest",
 ]

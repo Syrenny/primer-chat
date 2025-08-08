@@ -4,7 +4,8 @@ from shared_config import config
 from shared_kafka.base import BaseKafkaConsumer
 from shared_models.generation.interface import GenerationWorkerResponse
 from src.db.session import session_manager
-from src.services.messages import MessageService
+from src.services.messages import GenerationBufferService
+from src.services.request import RequestService
 
 
 class GenerationResultConsumer(BaseKafkaConsumer):
@@ -21,7 +22,7 @@ class GenerationResultConsumer(BaseKafkaConsumer):
             logger.error(f"[generation] ❌ Ошибка валидации ответа воркера: {err}")
             return
 
-        buffer = await MessageService.get_buffer(user_id=data.context.user_id)
+        buffer = await GenerationBufferService.get_buffer(user_id=data.context.user_id)
 
         if not buffer:
             logger.warning(
@@ -30,12 +31,11 @@ class GenerationResultConsumer(BaseKafkaConsumer):
             return
 
         async with session_manager.session() as session:
-            await MessageService.create_assistant_message(
-                session=session,
+            await RequestService.update_request(
                 user_id=data.context.user_id,
-                history_id=data.context.history_id,
                 request_id=data.context.request_id,
-                content=buffer,
+                session=session,
+                assistant_message=buffer,
             )
 
-        await MessageService.clear_buffer(user_id=data.context.user_id)
+        await GenerationBufferService.clear_buffer(user_id=data.context.user_id)

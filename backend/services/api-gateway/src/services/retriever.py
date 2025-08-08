@@ -1,49 +1,66 @@
-import asyncio
+from functools import lru_cache
 from uuid import UUID
 
 from loguru import logger
+from shared_adapters.openai import Embeddings
 from shared_models.indexation.core import IndexedChunk
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.config import config as local_config
-from src.db.dao.history_meta import DaoHistoryMeta
+from src.db.dao import DaoChunks
+from src.db.models import DBChunk
 from src.services.chunks import ChunkService
+from src.services.request import RequestService
+
+
+@lru_cache
+def get_embeddings() -> Embeddings:
+    return Embeddings()
 
 
 class RetrieveService:
     @classmethod
-    async def retrieve(
-        cls, session: AsyncSession, user_id: UUID, history_id: UUID, query: str
-    ) -> list[IndexedChunk]:
-        history_meta = await DaoHistoryMeta.get_history_meta(
-            session=session, user_id=user_id, history_id=history_id
+    async def find_chunks(
+        cls,
+        user_id: UUID,
+        history_id: UUID,
+        session: AsyncSession,
+        query: str,
+        limit: int,
+    ) -> list[DBChunk]:
+        embeddings_client = get_embeddings()
+
+        embeddings_response = await embeddings_client.embed_one(query)
+
+        return await DaoChunks.find_history_chunks(
+            session=session,
+            user_id=user_id,
+            history_id=history_id,
+            query_embedding=embeddings_response.data[0].embedding,
+            limit=limit,
         )
-        if not history_meta:
-            raise ValueError(
-                f"HistoryMeta not found for user {user_id} and history {history_id}"
-            )
 
-        retrieved_chunks_tasks = [
-            ChunkService.find_chunks(
-                file_id=db_file_meta.id,
-                user_id=user_id,
-                session=session,
-                query=query,
-                limit=local_config.retriever.max_chunks_per_file,
-            )
-            for db_file_meta in history_meta.files
-        ]
+    @classmethod
+    async def retrieve_and_save(
+        cls,
+        session: AsyncSession,
+        user_id: UUID,
+        history_id: UUID,
+        request_id: UUID,
+        query: str,
+    ) -> list[IndexedChunk]:
+        db_chunks = await cls.find_chunks(
+            history_id=history_id,
+            user_id=user_id,
+            session=session,
+            query=query,
+            limit=local_config.retriever.max_chunks_per_file,
+        )
 
-        results = await asyncio.gather(*retrieved_chunks_tasks, return_exceptions=True)
+        await RequestService.update_request(
+            user_id=user_id, request_id=request_id, session=session, chunks=db_chunks
+        )
 
-        chunks: list[IndexedChunk] = []
-        for file_meta, result in zip(history_meta.files, results):
-            if isinstance(result, Exception):
-                logger.error(
-                    f"[Retriever] ⚠️ Failed to retrieve chunks from file {file_meta.id}: {result}"
-                )
-                continue
-            result.sort(key=lambda c: (c.position.start_line, c.position.end_line))
-            chunks.extend(result)
+        chunks = ChunkService.from_db_chunks(db_chunks)
 
         logger.debug(
             f"[Retriever] Retrieved {len(chunks)} chunks for query '{query}' in history {history_id}"

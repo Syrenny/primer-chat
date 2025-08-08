@@ -138,6 +138,9 @@ class DBGenerationRequest(Base):
     timestamp: Mapped[datetime] = mapped_column(
         db.DateTime(timezone=True), default=utcnow
     )
+    user_message: Mapped[str] = mapped_column(db.Text, nullable=False)
+
+    assistant_message: Mapped[str | None] = mapped_column(db.Text, nullable=True)
 
     # History
     history_id: Mapped[uuid.UUID] = mapped_column(
@@ -152,30 +155,6 @@ class DBGenerationRequest(Base):
     retrieved_chunks: Mapped[list["DBChunk"]] = relationship(
         secondary=request_chunk_association,
         lazy="selectin",
-    )
-
-    user_message: Mapped["DBMessage"] = relationship(
-        "DBMessage",
-        lazy="selectin",
-        uselist=False,
-    )
-
-    assistant_message: Mapped["DBMessage"] = relationship(
-        "DBMessage", lazy="selectin", uselist=False
-    )
-
-
-class DBMessage(Base):
-    __tablename__ = "messages"
-
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
-    data: Mapped[dict] = mapped_column(JSONB, nullable=False)
-
-    # Generation request
-    request_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), db.ForeignKey("generation_requests.id"), nullable=False
     )
 
 

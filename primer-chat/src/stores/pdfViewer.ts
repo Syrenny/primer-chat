@@ -1,9 +1,10 @@
+import type { IndexedChunk } from '@/types/chunks'
 import { createStore } from 'zustand'
 
 interface PDFViewerStore {
 	iframeRef: HTMLIFrameElement | null
 	setIframeRef: (ref: HTMLIFrameElement | null) => void
-	scrollToChunk: (chunk: Chunk) => void
+	scrollToChunk: (chunk: IndexedChunk) => void
 }
 
 export const pdfViewerStore = createStore<PDFViewerStore>((set, get) => ({

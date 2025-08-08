@@ -4,7 +4,7 @@ from loguru import logger
 from shared_adapters.redis import RedisGenerationBuffer
 from src.models.dto.completions import ApiBufferResponse, CompletionsRequest
 from src.services.generation import GenerationService
-from src.services.messages import MessageService
+from src.services.messages import GenerationBufferService
 
 from ._context import RequestContext
 
@@ -58,7 +58,7 @@ async def completions_buffer(ctx: RequestContext = Depends()) -> ApiBufferRespon
 
         raise HTTPException(status_code=409, detail=detail)
 
-    buffer = await MessageService.get_buffer(user_id=ctx.user_id)
+    buffer = await GenerationBufferService.get_buffer(user_id=ctx.user_id)
 
     return ApiBufferResponse(buffer=buffer)
 

@@ -1,10 +1,10 @@
-import { type ClientChatMessage } from '../../types/chat'
+import { type ClientChatRequest } from '../../types/chat'
 
 interface ChatMessageProps {
-	message: ClientChatMessage
+	request: ClientChatRequest
 }
 
-const UserMessage = ({ message }: ChatMessageProps) => {
+const UserMessage = ({ request }: ChatMessageProps) => {
 	return (
 		<div className='flex justify-end'>
 			<div
@@ -15,7 +15,7 @@ const UserMessage = ({ message }: ChatMessageProps) => {
 					break-words whitespace-pre-wrap font-sans shadow-md
 				'
 			>
-				{message.data.content.trim()}
+				{request.userMessage.content.trim()}
 			</div>
 		</div>
 	)

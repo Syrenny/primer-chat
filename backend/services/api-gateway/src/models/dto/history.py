@@ -3,7 +3,7 @@ from uuid import UUID
 from pydantic import BaseModel
 from src.db.models import DBHistoryMeta
 from src.models.dto.files import FileMeta
-from src.models.dto.messages import ChatHistoryMessage
+from src.models.dto.requests import GenerationRequest
 
 
 class HistoryMetaSummary(BaseModel):
@@ -15,7 +15,7 @@ class HistoryMeta(BaseModel):
     history_id: UUID
     summary: HistoryMetaSummary
     files: list[FileMeta]
-    messages: list[ChatHistoryMessage]
+    requests: list[GenerationRequest]
 
     @classmethod
     def from_orm(cls, db_history_meta: DBHistoryMeta) -> "HistoryMeta":
@@ -23,7 +23,7 @@ class HistoryMeta(BaseModel):
             history_id=db_history_meta.id,
             summary=HistoryMetaSummary.model_validate(db_history_meta.summary),
             files=FileMeta.from_orm_list(db_history_meta.files),
-            messages=ChatHistoryMessage.from_db_requests(db_history_meta.requests),
+            requests=GenerationRequest.from_orm_list(db_history_meta.requests),
         )
 
     @classmethod

@@ -2,7 +2,7 @@ import asyncio
 from asyncio import TimeoutError as AsyncTimeoutError
 from contextlib import aclosing, asynccontextmanager
 from typing import AsyncGenerator, AsyncIterator
-from uuid import UUID, uuid4
+from uuid import UUID
 
 import async_timeout
 from loguru import logger
@@ -19,24 +19,26 @@ from src.consumers.generation.request import GenerationProducer
 from src.exceptions.generation import GenerationWorkerError
 from src.models.dto.completions import ApiChunkCompletionsResponse
 from src.services.history import HistoryMessagesService
-from src.services.messages import MessageService
+from src.services.request import RequestService
 from src.services.retriever import RetrieveService
 from src.services.user import UserPersonaService
 
 
 @asynccontextmanager
 async def init_generation_context(
-    user_id: UUID, history_id: UUID
+    user_id: UUID, history_id: UUID, session: AsyncSession, query: str
 ) -> AsyncGenerator[UUID, None]:
-    request_id = uuid4()
+    generation_request = await RequestService.create_request(
+        user_id=user_id, history_id=history_id, session=session, user_message=query
+    )
     await RedisGenerationBuffer.init(
-        user_id=user_id, history_id=history_id, request_id=request_id
+        user_id=user_id, history_id=history_id, request_id=generation_request.request_id
     )
 
     try:
-        yield request_id
+        yield generation_request.request_id
     except Exception as err:
-        logger.error(
+        logger.exception(
             f"❌ Error during generation publish ({user_id=}, {history_id=}): {err}"
         )
         await RedisGenerationBuffer.clear_all(user_id=user_id)
@@ -48,24 +50,20 @@ class GenerationService:
         cls, user_id: UUID, history_id: UUID, session: AsyncSession, query: str
     ) -> UUID:
         async with init_generation_context(
-            user_id=user_id, history_id=history_id
+            user_id=user_id, history_id=history_id, session=session, query=query
         ) as request_id:
-            await MessageService.add_user_message(
-                session=session,
-                user_id=user_id,
-                history_id=history_id,
-                request_id=request_id,
-                query=query,
-            )
-
             history_messages_with_summary = (
                 await HistoryMessagesService.get_history_messages(
                     user_id=user_id, history_id=history_id, session=session
                 )
             )
 
-            chunks = await RetrieveService.retrieve(
-                session=session, user_id=user_id, history_id=history_id, query=query
+            chunks = await RetrieveService.retrieve_and_save(
+                session=session,
+                user_id=user_id,
+                history_id=history_id,
+                request_id=request_id,
+                query=query,
             )
 
             persona = await UserPersonaService.get_persona(

@@ -6,7 +6,7 @@ import aioboto3
 import aiohttp
 from loguru import logger
 from shared_config import config, secrets
-from shared_models.indexation.core import IndexationResult
+from shared_models.indexation.core import IndexationWorkerResult
 
 
 class S3Storage:
@@ -89,7 +89,7 @@ class S3Storage:
 
     @classmethod
     async def upload_chunks(
-        cls, user_id: UUID, file_id: UUID, result: IndexationResult
+        cls, user_id: UUID, file_id: UUID, result: IndexationWorkerResult
     ) -> None:
         key = cls._build_chunks_key(user_id, file_id)
 
@@ -107,7 +107,9 @@ class S3Storage:
             logger.debug(f"✅ Uploaded chunks to S3: {key}")
 
     @classmethod
-    async def download_chunks(cls, user_id: UUID, file_id: UUID) -> IndexationResult:
+    async def download_chunks(
+        cls, user_id: UUID, file_id: UUID
+    ) -> IndexationWorkerResult:
         key = cls._build_chunks_key(user_id, file_id)
 
         async with cls._create_session() as client:
@@ -116,7 +118,7 @@ class S3Storage:
             decompressed = gzip.decompress(raw).decode("utf-8")
             data = json.loads(decompressed)
 
-            return IndexationResult.model_validate(data)
+            return IndexationWorkerResult.model_validate(data)
 
     @classmethod
     async def delete_chunks(cls, user_id: UUID, file_id: UUID) -> None:

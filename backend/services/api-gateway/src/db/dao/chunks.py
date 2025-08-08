@@ -3,7 +3,7 @@ from uuid import UUID
 import sqlalchemy as db
 from shared_models.indexation.core import IndexedChunk
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.db.models import DBChunk
+from src.db.models import DBChunk, history_file_association
 from src.db.wrap import transactional
 
 
@@ -25,7 +25,7 @@ class DaoChunks:
                 content=chunk.content,
                 embedding=chunk.embedding,
                 html_tag=chunk.html_tag,
-                positions=[pos.model_dump() for pos in chunk.position],
+                positions=[pos.model_dump() for pos in chunk.positions],
             )
             for chunk in chunks
         ]
@@ -33,21 +33,34 @@ class DaoChunks:
 
     @classmethod
     @transactional
-    async def find_file_chunks(
+    async def find_history_chunks(
         cls,
         session: AsyncSession,
         user_id: UUID,
-        file_id: UUID,
+        history_id: UUID,
         query_embedding: list[float],
         limit: int,
     ) -> list[DBChunk]:
-        """Ищет чанки с помощью pgvector."""
-        result = await session.execute(
+        """Ищет чанки среди всех файлов, привязанных к истории."""
+
+        # Подзапрос на file_ids, привязанные к этой истории
+        subquery = (
+            db.select(history_file_association.c.file_id)
+            .filter(history_file_association.c.history_id == history_id)
+            .subquery()
+        )
+
+        stmt = (
             db.select(DBChunk)
-            .filter(DBChunk.user_id == user_id, DBChunk.file_id == file_id)
+            .filter(
+                DBChunk.user_id == user_id,
+                DBChunk.file_id.in_(subquery),
+            )
             .order_by(DBChunk.embedding.l2_distance(query_embedding))
             .limit(limit)
         )
+
+        result = await session.execute(stmt)
         return result.scalars().all()
 
     @classmethod

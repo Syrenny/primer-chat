@@ -1,10 +1,10 @@
 import { v4 as uuidv4 } from 'uuid'
 import { createStore } from 'zustand'
 import { apiChatMessages } from '../api/history'
-import type { ApiChatMessageResponse, ClientChatMessage } from '../types/chat'
+import type { ApiChatMessageResponse, ClientChatRequest } from '../types/chat'
 import { RoleType } from '../types/chat'
 export interface HistoryState {
-	messages: ClientChatMessage[]
+	requests: ClientChatRequest[]
 	isHistoryLoading: boolean
 
 	loadHistory: (historyId: string) => Promise<void>
@@ -14,20 +14,24 @@ export interface HistoryState {
 }
 
 export const historyStore = createStore<HistoryState>((set, get) => ({
-	messages: [],
+	requests: [],
 	isHistoryLoading: true,
 
 	loadHistory: async historyId => {
 		set({ isHistoryLoading: true })
 		try {
 			const history = await apiChatMessages(historyId)
-			const clientMessages: ClientChatMessage[] = history.map(
+			const messages: ClientChatRequest[] = history.map(
 				(msg: ApiChatMessageResponse) => ({
-					index: msg.index ?? uuidv4(),
-					data: msg.data,
+					requestId: msg.request_id,
+					historyId: msg.history_id,
+					timestamp: msg.timestamp,
+					chunks: msg.chunks,
+					userMessage: msg.user_message,
+					assistantMessage: msg.assistant_message,
 				})
 			)
-			set({ messages: clientMessages })
+			set({ requests: messages })
 		} catch (error) {
 			console.error('❌ Error loading chat history:', error)
 		} finally {
@@ -36,48 +40,54 @@ export const historyStore = createStore<HistoryState>((set, get) => ({
 	},
 
 	addUserMessage: (content: string) => {
-		const newMessage: ClientChatMessage = {
-			index: uuidv4(),
-			data: { role: RoleType.User, content },
+		const newRequest: ClientChatRequest = {
+			requestId: uuidv4(),
+			historyId: '', // пока можно оставить пустым — подставится позже при сохранении
+			timestamp: new Date().toISOString(),
+			chunks: [],
+			userMessage: {
+				role: RoleType.User,
+				content,
+			},
 		}
+
 		set(state => ({
-			messages: [...state.messages, newMessage],
+			requests: [...state.requests, newRequest],
 		}))
 	},
 
-	updateAssistantMessage: (content: string) => {
+	updateAssistantMessage: content => {
 		set(state => {
-			console.log('Updating assistant message: ', content)
-			const prev = state.messages
+			const prev = state.requests
+			if (prev.length === 0) return {}
+
 			const last = prev[prev.length - 1]
 
-			// Если нет сообщения ассистента — создаём новое
-			if (!last || last.data.role !== 'assistant') {
+			if (!last.assistantMessage) {
+				const updated: ClientChatRequest = {
+					...last,
+					assistantMessage: {
+						role: RoleType.Assistant,
+						content,
+					},
+				}
 				return {
-					messages: [
-						...prev,
-						{
-							index: uuidv4(),
-							data: { role: RoleType.Assistant, content },
-						},
-					],
+					requests: [...prev.slice(0, -1), updated],
 				}
 			}
 
-			// Обновляем последнее
-			const updated = {
+			const updated: ClientChatRequest = {
 				...last,
-				data: {
-					...last.data,
-					content: last.data.content + content,
+				assistantMessage: {
+					...last.assistantMessage,
+					content: last.assistantMessage.content + content,
 				},
 			}
-
 			return {
-				messages: [...prev.slice(0, -1), updated],
+				requests: [...prev.slice(0, -1), updated],
 			}
 		})
 	},
 
-	clearHistory: () => set({ messages: [] }),
+	clearHistory: () => set({ requests: [] }),
 }))

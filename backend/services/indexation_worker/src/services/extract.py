@@ -2,8 +2,8 @@ from itertools import islice
 from typing import Iterable, List
 
 import fitz
-from shared_models.indexation.core import LineSignature, PdfLinePosition, StyleKey
 from src.config import config as local_config
+from src.models.core import LineSignature, PdfLinePosition, StyleKey
 
 
 class FitzService:

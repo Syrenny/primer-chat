@@ -17,7 +17,7 @@ from src.models.dto.completions import (
     ResumeRequestEvent,
 )
 from src.services.generation import GenerationService
-from src.services.messages import MessageService
+from src.services.messages import GenerationBufferService
 
 
 class WsUtils:
@@ -101,7 +101,7 @@ class CompletionsEventHandler:
             await WsUtils.send_error(ws=ws, text=text)
             return
 
-        buffer = await MessageService.get_buffer(user_id=user_id)
+        buffer = await GenerationBufferService.get_buffer(user_id=user_id)
 
         await WsUtils.send_buffer(ws=ws, text=buffer)
 

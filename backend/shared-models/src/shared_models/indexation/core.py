@@ -1,4 +1,5 @@
 from typing import List, Literal
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 
@@ -19,42 +20,16 @@ HTMLTag = Literal["h1", "h2", "h3", "p"]
 class IndexedChunk(BaseModel):
     model_config = ConfigDict(strict=True)
 
+    file_id: UUID
     content: str
     embedding: list[float]
     html_tag: HTMLTag
-    position: list[PdfLinePosition]
+    positions: list[PdfLinePosition]
 
 
-class IndexationResult(BaseModel):
+class IndexationWorkerResult(BaseModel):
     model_config = ConfigDict(strict=True)
 
     chunks: List[IndexedChunk]
     llm_usage: Usage
     embeddings_usage: EmbeddingsUsage
-
-
-class StyleKey(BaseModel):
-    font: str
-    size: float
-    flags: int
-
-
-class LineSignature(BaseModel):
-    index: int
-    content: str
-    style: StyleKey
-    position: PdfLinePosition
-
-
-class SegmentationRequest(BaseModel):
-    lines: list[LineSignature]
-
-
-class ResultChunk(BaseModel):
-    start_line: int
-    end_line: int
-    html_tag: HTMLTag
-
-
-class SegmentationResult(BaseModel):
-    chunks: list[ResultChunk]

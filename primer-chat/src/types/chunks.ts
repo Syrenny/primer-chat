@@ -6,8 +6,9 @@ export type PdfLinePosition = {
 export type HTMLTag = 'h1' | 'h2' | 'h3' | 'p'
 
 export type IndexedChunk = {
+	file_id: string
 	content: string
 	embedding: number[]
 	html_tag: HTMLTag
-	position: PdfLinePosition[]
+	positions: PdfLinePosition[]
 }

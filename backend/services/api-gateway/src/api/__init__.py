@@ -2,12 +2,10 @@ from .completions import router as completions_router
 from .files import router as files_router
 from .history_meta import router as history_meta_router
 from .messages import router as messages_router
-from .retriever import router as retriever_router
 
 __all__ = [
     "completions_router",
     "files_router",
     "history_meta_router",
     "messages_router",
-    "retriever_router",
 ]

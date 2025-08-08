@@ -1,3 +1,4 @@
+import type { IndexedChunk } from './chunks'
 import type { ApiFileResponse } from './files'
 
 export const RoleType = {
@@ -16,14 +17,21 @@ export interface ChatMessage {
 }
 
 export interface ApiChatMessageResponse {
-	index: string
-	data: ChatMessage
+	request_id: string
+	history_id: string
 	timestamp: string
+	chunks: IndexedChunk[]
+	user_message: ChatMessage
+	assistant_message?: ChatMessage
 }
 
-export interface ClientChatMessage {
-	index: string
-	data: ChatMessage
+export interface ClientChatRequest {
+	requestId: string
+	historyId: string
+	timestamp: string
+	chunks: IndexedChunk[]
+	userMessage: ChatMessage
+	assistantMessage?: ChatMessage
 }
 
 export interface ApiChatMetaResponse {

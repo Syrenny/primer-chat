@@ -2,7 +2,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Skeleton } from '@/components/ui/skeleton'
 import { generationStore } from '@/stores/generation'
 import { historyStore } from '@/stores/history'
-import { RoleType } from '@/types/chat'
 import { AlertTriangle } from 'lucide-react'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useStore } from 'zustand'
@@ -16,7 +15,7 @@ interface ChatContentProps {
 }
 
 const ChatContent = ({ historyId }: ChatContentProps) => {
-	const messages = useStore(historyStore, state => state.messages)
+	const requests = useStore(historyStore, state => state.requests)
 	const isHistoryLoading = useStore(
 		historyStore,
 		state => state.isHistoryLoading
@@ -33,7 +32,7 @@ const ChatContent = ({ historyId }: ChatContentProps) => {
 
 	useLayoutEffect(() => {
 		chatEndRef.current?.scrollIntoView({ behavior: 'auto' })
-	}, [messages])
+	}, [requests])
 
 	useEffect(() => {
 		if (!historyId) {
@@ -63,7 +62,7 @@ const ChatContent = ({ historyId }: ChatContentProps) => {
 		)
 	}
 
-	if (!isHistoryLoading && messages.length === 0) {
+	if (!isHistoryLoading && requests.length === 0) {
 		return <ChatIntroduction />
 	}
 
@@ -72,16 +71,18 @@ const ChatContent = ({ historyId }: ChatContentProps) => {
 			<div className='h-full w-full flex flex-col justify-center items-center'>
 				<div className='w-full max-w-3xl h-full '>
 					<div className='flex flex-col w-full pt-6 pb-24 space-y-8 px-3'>
-						{messages.map(msg => {
-							const isUser = msg.data.role === RoleType.User
-							const MessageComponent = isUser
-								? UserMessage
-								: AssistantMessage
+						{requests.map(req => {
 							return (
-								<MessageComponent
-									key={msg.index}
-									message={msg}
-								/>
+								<div key={req.requestId}>
+									<UserMessage
+										key={`user_${req.requestId}`}
+										request={req}
+									/>
+									<AssistantMessage
+										key={`assistant_${req.requestId}`}
+										request={req}
+									/>
+								</div>
 							)
 						})}
 

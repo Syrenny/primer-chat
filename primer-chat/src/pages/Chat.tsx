@@ -21,13 +21,13 @@ const Chat = () => {
 	const chatEndRef = useRef<HTMLDivElement | null>(null)
 
 	// History store
-	const messages = useStore(historyStore, state => state.messages)
+	const requests = useStore(historyStore, state => state.requests)
 
 	const { fileId } = useParams()
 
 	useLayoutEffect(() => {
 		chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-	}, [messages])
+	}, [requests])
 
 	return (
 		<div className='flex flex-row h-dvh'>

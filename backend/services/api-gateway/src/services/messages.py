@@ -4,54 +4,9 @@ from loguru import logger
 from pydantic import ValidationError
 from shared_adapters.redis import RedisGenerationBuffer
 from shared_models.generation.interface import GenerationWorkerChunkResponse
-from shared_models.openai.completions import ChatMessage
-from sqlalchemy.ext.asyncio import AsyncSession
-from src.db.dao import DaoMessages
-from src.db.models import DBChunk
 
 
-class MessageService:
-    @classmethod
-    async def add_user_message(
-        cls,
-        user_id: UUID,
-        history_id: UUID,
-        session: AsyncSession,
-        query: str,
-        request_id: UUID,
-    ) -> None:
-        chat_message = ChatMessage(role="user", content=query)
-
-        await DaoMessages.add_message(
-            session=session,
-            user_id=user_id,
-            history_id=history_id,
-            data=chat_message,
-            request_id=request_id,
-            chunks=[],
-        )
-
-    @classmethod
-    async def create_assistant_message(
-        cls,
-        user_id: UUID,
-        history_id: UUID,
-        session: AsyncSession,
-        request_id: UUID,
-        content: str,
-        chunks: list[DBChunk],
-    ) -> None:
-        chat_message = ChatMessage(role="assistant", content=content)
-
-        await DaoMessages.add_message(
-            session=session,
-            user_id=user_id,
-            history_id=history_id,
-            request_id=request_id,
-            data=chat_message,
-            chunks=chunks,
-        )
-
+class GenerationBufferService:
     @classmethod
     async def get_buffer(
         cls,
