@@ -2,7 +2,7 @@ from typing import Literal, Union
 from uuid import UUID
 
 from pydantic import BaseModel
-from shared_models.indexation.core import IndexedChunk
+from shared_models.indexation.interface import ExtendedIndexedChunk
 
 
 class ApiBufferResponse(BaseModel):
@@ -26,7 +26,7 @@ class DefaultChunk(BaseModel):
 
 class RetrievedChunk(BaseModel):
     type: Literal["retrieved"]
-    chunk: IndexedChunk
+    chunk: ExtendedIndexedChunk
 
 
 ApiChunkCompletionsResponse = Union[

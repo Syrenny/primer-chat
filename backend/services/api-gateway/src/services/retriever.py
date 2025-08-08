@@ -3,13 +3,13 @@ from uuid import UUID
 
 from loguru import logger
 from shared_adapters.openai import Embeddings
-from shared_models.indexation.core import IndexedChunk
+from shared_models.indexation.interface import ExtendedIndexedChunk
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.config import config as local_config
 from src.db.dao import DaoChunks
 from src.db.models import DBChunk
-from src.services.chunks import ChunkService
 from src.services.request import RequestService
+from src.services.chunks import ChunkService
 
 
 @lru_cache
@@ -47,7 +47,7 @@ class RetrieveService:
         history_id: UUID,
         request_id: UUID,
         query: str,
-    ) -> list[IndexedChunk]:
+    ) -> list[ExtendedIndexedChunk]:
         db_chunks = await cls.find_chunks(
             history_id=history_id,
             user_id=user_id,

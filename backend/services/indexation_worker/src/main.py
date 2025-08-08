@@ -46,7 +46,7 @@ class WorkerIndexationRequestConsumer(BaseKafkaConsumer):
             pdf_bytes = await S3Storage.get_pdf_bytes_from_url(request.s3_link)
 
             service = get_indexation_service()
-            result = await service.run(pdf_bytes, context=request.context)
+            result = await service.run(pdf_bytes)
 
             await S3Storage.upload_chunks(
                 user_id=request.context.user_id,

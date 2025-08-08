@@ -1,9 +1,7 @@
 import asyncio
-from uuid import UUID
 
 from loguru import logger
 from shared_models.indexation.core import IndexationWorkerResult, IndexedChunk
-from shared_models.indexation.interface import WorkerRequestContext
 from shared_models.openai.completions import Usage
 from src.services.embed import BatchEmbedder
 from src.services.extract import FitzService
@@ -14,15 +12,12 @@ from src.services.segmentation import (
 )
 
 
-# TODO: isolate IndexedChunk model
 class IndexationService:
     def __init__(self) -> None:
         self.segmentation_service = SegmentationService()
         self.batch_embedder = BatchEmbedder()
 
-    async def run(
-        self, pdf_bytes: bytes, context: WorkerRequestContext
-    ) -> IndexationWorkerResult:
+    async def run(self, pdf_bytes: bytes) -> IndexationWorkerResult:
         indexed_chunks: list[IndexedChunk] = []
         total_llm_usage = Usage()
 
@@ -31,9 +26,7 @@ class IndexationService:
 
         for lines, (result, usage) in zip(line_batches, segmentation_results):
             total_llm_usage += usage
-            indexed_chunks += self._process_segmented_chunks(
-                lines, result, file_id=context.file_id
-            )
+            indexed_chunks += self._process_segmented_chunks(lines, result)
 
         embeddings = await self.batch_embedder.compute()
         for chunk, emb in zip(indexed_chunks, embeddings):
@@ -46,7 +39,7 @@ class IndexationService:
         )
 
     def _process_segmented_chunks(
-        self, lines: list[LineSignature], result: SegmentationResult, file_id: UUID
+        self, lines: list[LineSignature], result: SegmentationResult
     ) -> list[IndexedChunk]:
         result_chunks = []
 

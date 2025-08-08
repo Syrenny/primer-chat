@@ -3,7 +3,7 @@ from uuid import UUID
 
 from pydantic import BaseModel
 from shared_models.generation.interface import ChatMessage
-from shared_models.indexation.core import IndexedChunk
+from shared_models.indexation.interface import ExtendedIndexedChunk
 from src.db.models import DBGenerationRequest
 from src.services.chunks import ChunkService
 
@@ -12,7 +12,7 @@ class GenerationRequest(BaseModel):
     request_id: UUID
     history_id: UUID
     timestamp: datetime
-    chunks: list[IndexedChunk]
+    chunks: list[ExtendedIndexedChunk]
     user_message: ChatMessage
     assistant_message: ChatMessage | None
 

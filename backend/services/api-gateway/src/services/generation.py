@@ -12,6 +12,7 @@ from shared_models.generation.interface import (
     GenerationWorkerChunkResponse,
     GenerationWorkerRequest,
 )
+from shared_models.indexation.interface import ExtendedIndexedChunk
 from shared_models.worker.context import WorkerRequestContext
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.config import config as local_config
@@ -48,7 +49,7 @@ class GenerationService:
     @classmethod
     async def publish(
         cls, user_id: UUID, history_id: UUID, session: AsyncSession, query: str
-    ) -> UUID:
+    ) -> tuple[UUID, list[ExtendedIndexedChunk]]:
         async with init_generation_context(
             user_id=user_id, history_id=history_id, session=session, query=query
         ) as request_id:
@@ -58,7 +59,7 @@ class GenerationService:
                 )
             )
 
-            chunks = await RetrieveService.retrieve_and_save(
+            dto_chunks = await RetrieveService.retrieve_and_save(
                 session=session,
                 user_id=user_id,
                 history_id=history_id,
@@ -78,7 +79,7 @@ class GenerationService:
                 ),
                 history=history_messages_with_summary,
                 query=query,
-                chunks=chunks,
+                chunks=ExtendedIndexedChunk.to_indexed_chunks(dto_chunks),
                 persona=persona,
             )
 

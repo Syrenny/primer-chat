@@ -20,7 +20,6 @@ HTMLTag = Literal["h1", "h2", "h3", "p"]
 class IndexedChunk(BaseModel):
     model_config = ConfigDict(strict=True)
 
-    file_id: UUID
     content: str
     embedding: list[float]
     html_tag: HTMLTag
@@ -33,3 +32,23 @@ class IndexationWorkerResult(BaseModel):
     chunks: List[IndexedChunk]
     llm_usage: Usage
     embeddings_usage: EmbeddingsUsage
+
+
+class ExtendedIndexedChunk(IndexedChunk):
+    model_config = ConfigDict(strict=True)
+    file_id: UUID
+
+    @classmethod
+    def to_indexed_chunk(cls, dto_chunk: "ExtendedIndexedChunk") -> IndexedChunk:
+        return IndexedChunk(
+            content=dto_chunk.content,
+            embedding=dto_chunk.embedding,
+            html_tag=dto_chunk.html_tag,
+            positions=dto_chunk.positions,
+        )
+
+    @classmethod
+    def to_indexed_chunks(
+        cls, chunks: list["ExtendedIndexedChunk"]
+    ) -> list[IndexedChunk]:
+        return [chunk.to_indexed_chunk() for chunk in chunks]
