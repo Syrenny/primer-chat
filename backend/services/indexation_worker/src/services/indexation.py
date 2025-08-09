@@ -50,7 +50,6 @@ class IndexationService:
 
             result_chunks.append(
                 IndexedChunk(
-                    file_id=file_id,
                     content=content,
                     embedding=[],
                     html_tag=chunk.html_tag,

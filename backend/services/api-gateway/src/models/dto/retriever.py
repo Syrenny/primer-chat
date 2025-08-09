@@ -1,7 +1,7 @@
 from uuid import UUID
 
 from pydantic import BaseModel
-from shared_models.indexation.interface import ExtendedIndexedChunk
+from shared_models.indexation.core import ExtendedIndexedChunk
 
 
 class ApiRetrieverRequest(BaseModel):

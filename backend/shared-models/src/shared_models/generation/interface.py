@@ -2,7 +2,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
-from shared_models.indexation.core import IndexedChunk
+from shared_models.indexation.core import ExtendedIndexedChunk
 from shared_models.openai.completions import ChatMessage, Usage
 from shared_models.user.persona import UserPersona
 from shared_models.worker.context import WorkerRequestContext
@@ -15,7 +15,7 @@ class GenerationWorkerRequest(BaseModel):
 
     history: list[ChatMessage]
     query: str
-    chunks: list[IndexedChunk]
+    chunks: list[ExtendedIndexedChunk]
     persona: UserPersona
 
 

@@ -29,7 +29,7 @@ export function RetrievedChunks({ chunks }: RetrievedChunksProps) {
 							className='flex items-center w-full text-left text-primary hover:underline hover:text-primary/90 transition-colors max-w-xs hover:cursor-pointer'
 						>
 							<span className='truncate flex-1'>
-								{chunk.documentName} (стр. {chunk.page})
+								{chunk.filename} (стр. {chunk.positions[0].page})
 							</span>
 						</button>
 					</li>

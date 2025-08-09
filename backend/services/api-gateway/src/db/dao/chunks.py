@@ -3,6 +3,7 @@ from uuid import UUID
 import sqlalchemy as db
 from shared_models.indexation.core import IndexedChunk
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
 from src.db.models import DBChunk, history_file_association
 from src.db.wrap import transactional
 
@@ -10,11 +11,25 @@ from src.db.wrap import transactional
 class DaoChunks:
     @classmethod
     @transactional
+    async def list_chunks(
+        cls, session: AsyncSession, user_id: UUID, file_id: UUID
+    ) -> list[DBChunk]:
+        stmt = select(DBChunk).filter(
+            DBChunk.user_id == user_id, DBChunk.file_id == file_id
+        )
+
+        result = await session.execute(stmt)
+
+        return result.scalars().all()
+
+    @classmethod
+    @transactional
     async def save_file_chunks(
         cls,
         session: AsyncSession,
         user_id: UUID,
         file_id: UUID,
+        filename: str,
         chunks: list[IndexedChunk],
     ) -> None:
         """Сохраняет чанки в БД."""
@@ -22,6 +37,7 @@ class DaoChunks:
             DBChunk(
                 user_id=user_id,
                 file_id=file_id,
+                filename=filename,
                 content=chunk.content,
                 embedding=chunk.embedding,
                 html_tag=chunk.html_tag,
@@ -43,19 +59,18 @@ class DaoChunks:
     ) -> list[DBChunk]:
         """Ищет чанки среди всех файлов, привязанных к истории."""
 
-        # Подзапрос на file_ids, привязанные к этой истории
-        subquery = (
-            db.select(history_file_association.c.file_id)
-            .filter(history_file_association.c.history_id == history_id)
-            .subquery()
+        exists_q = (
+            db.select(db.literal(1))
+            .select_from(history_file_association)
+            .where(
+                history_file_association.c.history_id == history_id,
+                history_file_association.c.file_id == DBChunk.file_id,
+            )
         )
 
         stmt = (
             db.select(DBChunk)
-            .filter(
-                DBChunk.user_id == user_id,
-                DBChunk.file_id.in_(subquery),
-            )
+            .where(DBChunk.user_id == user_id, db.exists(exists_q).correlate(DBChunk))
             .order_by(DBChunk.embedding.l2_distance(query_embedding))
             .limit(limit)
         )

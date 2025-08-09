@@ -4,9 +4,9 @@ from functools import lru_cache
 
 from loguru import logger
 from pydantic import ValidationError
+from shared_adapters.kafka import BaseKafkaConsumer, BaseKafkaProducer
 from shared_adapters.s3 import S3Storage
 from shared_config import config
-from shared_kafka.base import BaseKafkaConsumer, BaseKafkaProducer
 from shared_models.indexation.interface import (
     IndexationWorkerRequest,
     IndexationWorkerResponse,
@@ -35,7 +35,7 @@ class WorkerIndexationRequestConsumer(BaseKafkaConsumer):
 
     async def handle_message(self, payload: dict):
         try:
-            request = IndexationWorkerRequest.model_validate_json(payload)
+            request = IndexationWorkerRequest.model_validate(payload)
         except ValidationError as err:
             logger.error(f"[indexation worker] ❌ Validation error: {err}")
             return

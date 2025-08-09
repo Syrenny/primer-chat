@@ -1,8 +1,8 @@
-from typing import Literal, Union
+from typing import Annotated, Literal, Union
 from uuid import UUID
 
-from pydantic import BaseModel
-from shared_models.indexation.interface import ExtendedIndexedChunk
+from pydantic import BaseModel, Field
+from shared_models.indexation.core import PdfLinePosition
 
 
 class ApiBufferResponse(BaseModel):
@@ -16,21 +16,22 @@ class CompletionsRequest(BaseModel):
 
 class ErrorChunk(BaseModel):
     type: Literal["error"]
-    chunk: str
+    text: str
 
 
-class DefaultChunk(BaseModel):
-    type: Literal["default"]
-    chunk: str
+class ResponseChunk(BaseModel):
+    type: Literal["response"]
+    text: str
 
 
 class RetrievedChunk(BaseModel):
     type: Literal["retrieved"]
-    chunk: ExtendedIndexedChunk
+    positions: list[PdfLinePosition]
+    file_id: UUID
+    filename: str
 
 
-ApiChunkCompletionsResponse = Union[
-    ErrorChunk,
-    DefaultChunk,
-    RetrievedChunk,
+ApiChunkCompletionsResponse = Annotated[
+    Union[ErrorChunk, ResponseChunk, RetrievedChunk],
+    Field(discriminator="type"),
 ]

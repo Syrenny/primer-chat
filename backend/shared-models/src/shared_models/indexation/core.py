@@ -37,6 +37,7 @@ class IndexationWorkerResult(BaseModel):
 class ExtendedIndexedChunk(IndexedChunk):
     model_config = ConfigDict(strict=True)
     file_id: UUID
+    filename: str
 
     @classmethod
     def to_indexed_chunk(cls, dto_chunk: "ExtendedIndexedChunk") -> IndexedChunk:
@@ -51,4 +52,4 @@ class ExtendedIndexedChunk(IndexedChunk):
     def to_indexed_chunks(
         cls, chunks: list["ExtendedIndexedChunk"]
     ) -> list[IndexedChunk]:
-        return [chunk.to_indexed_chunk() for chunk in chunks]
+        return [cls.to_indexed_chunk(chunk) for chunk in chunks]

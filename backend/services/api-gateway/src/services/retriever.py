@@ -3,7 +3,7 @@ from uuid import UUID
 
 from loguru import logger
 from shared_adapters.openai import Embeddings
-from shared_models.indexation.interface import ExtendedIndexedChunk
+from shared_models.indexation.core import ExtendedIndexedChunk
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.config import config as local_config
 from src.db.dao import DaoChunks

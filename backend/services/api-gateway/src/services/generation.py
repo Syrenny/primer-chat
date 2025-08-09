@@ -1,24 +1,24 @@
 import asyncio
 from asyncio import TimeoutError as AsyncTimeoutError
-from contextlib import aclosing, asynccontextmanager
+from contextlib import AsyncExitStack, aclosing, asynccontextmanager
 from typing import AsyncGenerator, AsyncIterator
 from uuid import UUID
 
 import async_timeout
 from loguru import logger
 from pydantic import ValidationError
-from shared_adapters.redis import RedisGenerationBuffer
+from shared_adapters.redis import RedisGenerationBuffer, RedisGenerationRequestStore
 from shared_models.generation.interface import (
     GenerationWorkerChunkResponse,
     GenerationWorkerRequest,
 )
-from shared_models.indexation.interface import ExtendedIndexedChunk
+from shared_models.indexation.core import ExtendedIndexedChunk
 from shared_models.worker.context import WorkerRequestContext
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.config import config as local_config
-from src.consumers.generation.request import GenerationProducer
 from src.exceptions.generation import GenerationWorkerError
-from src.models.dto.completions import ApiChunkCompletionsResponse
+from src.kafka.generation.producer import GenerationProducer
+from src.models.dto.completions import ErrorChunk, ResponseChunk, RetrievedChunk
 from src.services.history import HistoryMessagesService
 from src.services.request import RequestService
 from src.services.retriever import RetrieveService
@@ -49,7 +49,7 @@ class GenerationService:
     @classmethod
     async def publish(
         cls, user_id: UUID, history_id: UUID, session: AsyncSession, query: str
-    ) -> tuple[UUID, list[ExtendedIndexedChunk]]:
+    ) -> tuple[UUID]:
         async with init_generation_context(
             user_id=user_id, history_id=history_id, session=session, query=query
         ) as request_id:
@@ -71,20 +71,26 @@ class GenerationService:
                 session=session, user_id=user_id
             )
 
+            context = WorkerRequestContext(
+                request_id=request_id,
+                user_id=user_id,
+                history_id=history_id,
+            )
+
             request = GenerationWorkerRequest(
-                context=WorkerRequestContext(
-                    request_id=request_id,
-                    user_id=user_id,
-                    history_id=history_id,
-                ),
+                context=context,
                 history=history_messages_with_summary,
                 query=query,
                 chunks=ExtendedIndexedChunk.to_indexed_chunks(dto_chunks),
                 persona=persona,
             )
 
+            await RedisGenerationRequestStore.put(
+                user_id=user_id, request_id=request_id, request=request
+            )
+
             async with GenerationProducer() as producer:
-                await producer.send(request)
+                await producer.send(context)
 
             logger.info(
                 f"🛰️ Sent generation request {request_id} for history {history_id}"
@@ -92,7 +98,7 @@ class GenerationService:
             return request_id
 
     @classmethod
-    async def listen(
+    async def stream_model_chunks(
         cls, user_id: UUID, history_id: UUID, request_id: UUID
     ) -> AsyncIterator[str]:
         try:
@@ -133,29 +139,67 @@ class GenerationService:
                 yield response
 
     @classmethod
+    async def stream_retrieved_chunks(
+        cls, user_id: UUID, request_id: UUID
+    ) -> AsyncIterator[ExtendedIndexedChunk]:
+        try:
+            request = await RedisGenerationRequestStore.get(
+                user_id=user_id, request_id=request_id
+            )
+            if request is None:
+                raise
+        except Exception as err:
+            logger.error(f"💥 Failed to fetch request from Redis: {err}")
+            return
+
+        for chunk in request.chunks:
+            yield (
+                RetrievedChunk(
+                    type="retrieved",
+                    positions=chunk.positions,
+                    file_id=chunk.file_id,
+                    filename=chunk.file_id,
+                ).model_dump_json()
+                + "\n\n"
+            )
+
+    @classmethod
     async def stream_api_chunks(
         cls, user_id: UUID, history_id: UUID, request_id: UUID
     ) -> AsyncGenerator[str, None]:
-        generator = cls.listen(
+        retrieved_generator = cls.stream_retrieved_chunks(
+            user_id=user_id, request_id=request_id
+        )
+
+        model_generator = cls.stream_model_chunks(
             user_id=user_id,
             history_id=history_id,
             request_id=request_id,
         )
 
-        async with aclosing(generator) as _generator:
-            try:
-                async for chunk in _generator:
-                    yield (
-                        ApiChunkCompletionsResponse(text=chunk).model_dump_json()
-                        + "\n\n"
+        try:
+            async with AsyncExitStack() as stack:
+                r = await stack.enter_async_context(aclosing(retrieved_generator))
+                m = await stack.enter_async_context(aclosing(model_generator))
+                try:
+                    async for chunk in r:
+                        yield chunk
+                    async for chunk in m:
+                        yield (
+                            ResponseChunk(type="response", text=chunk).model_dump_json()
+                            + "\n\n"
+                        )
+                except asyncio.CancelledError:
+                    logger.info(
+                        f"🚫 Client disconnected (user={user_id}, history={history_id})"
                     )
-            except asyncio.CancelledError:
-                logger.info(
-                    f"🚫 Client disconnected (user={user_id}, history={history_id})"
-                )
-            except Exception as err:
-                logger.exception(f"💥 Unhandled exception in stream: {err}")
-                error_response = ApiChunkCompletionsResponse(
-                    type="error", text="Internal server error"
-                )
-                yield error_response.model_dump_json() + "\n\n"
+                except Exception as err:
+                    logger.exception(f"💥 Unhandled exception in stream: {err}")
+                    error_response = ErrorChunk(
+                        type="error", text="Internal server error"
+                    )
+                    yield error_response.model_dump_json() + "\n\n"
+        finally:
+            await RedisGenerationRequestStore.delete(
+                user_id=user_id, request_id=request_id
+            )

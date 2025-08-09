@@ -1,7 +1,7 @@
 from loguru import logger
 from pydantic import ValidationError
+from shared_adapters.kafka import BaseKafkaConsumer
 from shared_config import config
-from shared_kafka.base import BaseKafkaConsumer
 from shared_models.generation.interface import GenerationWorkerResponse
 from src.db.session import session_manager
 from src.services.messages import GenerationBufferService
@@ -17,7 +17,7 @@ class GenerationResultConsumer(BaseKafkaConsumer):
 
     async def handle_message(self, payload: dict) -> None:
         try:
-            data = GenerationWorkerResponse.model_validate_json(payload)
+            data = GenerationWorkerResponse.model_validate(payload)
         except ValidationError as err:
             logger.error(f"[generation] ❌ Ошибка валидации ответа воркера: {err}")
             return

@@ -1,4 +1,3 @@
-import json
 from typing import AsyncIterator
 from uuid import UUID
 
@@ -135,10 +134,8 @@ class RedisGenerationRequestStore:
         key = cls._key(user_id, request_id)
 
         # serialize via Pydantic
-        serialized = request.model_dump(mode="json")
-        await client.set(
-            key, json.dumps(serialized), ex=config.redis.buffer.ttl_seconds
-        )
+        serialized = request.model_dump_json()
+        await client.set(key, serialized, ex=config.redis.buffer.ttl_seconds)
 
     @classmethod
     async def get(
@@ -151,8 +148,7 @@ class RedisGenerationRequestStore:
         if raw is None:
             return None
 
-        data = json.loads(raw)
-        return GenerationWorkerRequest.model_validate(data)
+        return GenerationWorkerRequest.model_validate_json(raw)
 
     @classmethod
     async def delete(cls, user_id: UUID, request_id: UUID) -> None:

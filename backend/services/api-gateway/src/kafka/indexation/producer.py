@@ -1,5 +1,5 @@
+from shared_adapters.kafka import BaseKafkaProducer
 from shared_config import config
-from shared_kafka.base import BaseKafkaProducer
 from shared_models.indexation.interface import IndexationWorkerRequest
 
 

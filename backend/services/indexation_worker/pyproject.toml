@@ -20,7 +20,6 @@ dependencies = [
     "scikit-learn>=1.7.1",
     "shared-adapters",
     "shared-config",
-    "shared-kafka",
     "shared-models",
 ]
 
@@ -28,4 +27,3 @@ dependencies = [
 shared-models = { path = "../../shared-models", editable = true }
 shared-adapters = { path = "../../shared-adapters", editable = true }
 shared-config = { path = "../../shared-config", editable = true }
-shared-kafka = { path = "../../shared-kafka", editable = true }

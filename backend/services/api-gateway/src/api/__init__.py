@@ -1,3 +1,4 @@
+from .chunks import router as chunks_router
 from .completions import router as completions_router
 from .files import router as files_router
 from .history_meta import router as history_meta_router
@@ -8,4 +9,5 @@ __all__ = [
     "files_router",
     "history_meta_router",
     "messages_router",
+    "chunks_router",
 ]

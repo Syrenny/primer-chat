@@ -4,14 +4,15 @@ from functools import lru_cache
 
 from loguru import logger
 from pydantic import ValidationError
-from shared_adapters.redis import RedisGenerationBuffer
+from shared_adapters.kafka import BaseKafkaConsumer, BaseKafkaProducer
+from shared_adapters.redis import RedisGenerationBuffer, RedisGenerationRequestStore
 from shared_config import config
-from shared_kafka.base import BaseKafkaConsumer, BaseKafkaProducer
 from shared_models.generation.interface import (
     GenerationWorkerChunkResponse,
     GenerationWorkerRequest,
     GenerationWorkerResponse,
 )
+from shared_models.worker.context import WorkerRequestContext
 from src.services.generation import GenerationService
 
 
@@ -34,12 +35,25 @@ class WorkerGenerationRequestConsumer(BaseKafkaConsumer):
             group_id=config.kafka.generation.request.group_id,
         )
 
+    async def get_request(self, payload: dict) -> GenerationWorkerRequest:
+        try:
+            context = WorkerRequestContext.model_validate(payload)
+        except ValidationError as err:
+            logger.error(f"[generation worker] ❌ Validation error: {err}")
+            raise
+        return await RedisGenerationRequestStore.get(
+            user_id=context.user_id, request_id=context.request_id
+        )
+
     async def handle_message(self, payload: dict) -> None:
         try:
-            request = GenerationWorkerRequest.model_validate_json(payload)
-        except ValidationError as err:
-            logger.exception(f"[generation worker] ❌ Validation error: {err}")
+            request = await self.get_request(payload)
+            if not request:
+                raise
+        except Exception as err:
+            logger.error(f"[generation worker] ❌: {err}")
             return
+
         try:
             service = get_generation_service()
             params = {

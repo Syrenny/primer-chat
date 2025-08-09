@@ -3,7 +3,7 @@ from uuid import UUID
 
 from pydantic import BaseModel
 from shared_models.generation.interface import ChatMessage
-from shared_models.indexation.interface import ExtendedIndexedChunk
+from shared_models.indexation.core import ExtendedIndexedChunk
 from src.db.models import DBGenerationRequest
 from src.services.chunks import ChunkService
 

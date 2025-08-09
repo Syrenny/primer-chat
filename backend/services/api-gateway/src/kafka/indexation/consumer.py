@@ -1,8 +1,8 @@
 from loguru import logger
 from pydantic import ValidationError
+from shared_adapters.kafka import BaseKafkaConsumer
 from shared_adapters.s3 import S3Storage
 from shared_config import config
-from shared_kafka.base import BaseKafkaConsumer
 from shared_models.indexation.interface import IndexationWorkerResponse
 from src.db.session import session_manager
 from src.services.chunks import ChunkService
@@ -18,7 +18,7 @@ class IndexationResultConsumer(BaseKafkaConsumer):
 
     async def handle_message(self, payload: dict) -> None:
         try:
-            data = IndexationWorkerResponse.model_validate_json(payload)
+            data = IndexationWorkerResponse.model_validate(payload)
         except ValidationError as err:
             logger.error(
                 logger.error(f"[indexation] ❌ Ошибка валидации ответа воркера: {err}")
@@ -41,8 +41,14 @@ class IndexationResultConsumer(BaseKafkaConsumer):
             )
 
             async with session_manager.session() as session:
+                file_meta = await FileService.get_file_meta(
+                    user_id=data.context.user_id,
+                    session=session,
+                    file_id=data.context.file_id,
+                )
                 await ChunkService.save_chunks(
                     file_id=data.context.file_id,
+                    filename=file_meta.filename,
                     user_id=data.context.user_id,
                     chunks=indexation_result.chunks,
                     session=session,

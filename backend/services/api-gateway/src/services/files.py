@@ -8,7 +8,7 @@ from shared_models.indexation.interface import IndexationWorkerRequest
 from shared_models.worker.context import WorkerRequestContext
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.config import config
-from src.consumers.indexation.request import IndexationProducer
+from src.kafka.indexation.producer import IndexationProducer
 from src.db.dao import DaoFileMeta
 from src.db.models import DBFileMeta
 from src.exceptions.files import (
@@ -142,6 +142,19 @@ class FileProcessor:
 
 
 class FileService:
+    @classmethod
+    async def get_file_meta(
+        cls, file_id: UUID, session: AsyncSession, user_id: UUID
+    ) -> FileMeta:
+        db_file_meta = await DaoFileMeta.get_file_meta(
+            session=session, user_id=user_id, file_id=file_id
+        )
+
+        if not db_file_meta:
+            raise MissingFileIdsError(ids={file_id})
+
+        return FileMeta.from_orm(db_file_meta)
+
     @classmethod
     async def add_file(
         cls, upload_file: UploadFile, session: AsyncSession, user_id: UUID

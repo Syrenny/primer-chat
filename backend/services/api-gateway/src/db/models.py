@@ -180,6 +180,7 @@ class DBChunk(Base):
     )
 
     # File
+    filename: Mapped[str] = mapped_column(db.Text, nullable=False)
     file_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), db.ForeignKey("file_meta.id"), nullable=False
     )

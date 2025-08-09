@@ -350,7 +350,6 @@ dependencies = [
     { name = "pydantic-settings" },
     { name = "pyyaml" },
     { name = "shared-adapters" },
-    { name = "shared-kafka" },
 ]
 
 [package.metadata]
@@ -364,7 +363,6 @@ requires-dist = [
     { name = "pydantic-settings", specifier = ">=2.10.1" },
     { name = "pyyaml", specifier = ">=6.0.2" },
     { name = "shared-adapters", editable = "../../shared-adapters" },
-    { name = "shared-kafka", editable = "../../shared-kafka" },
 ]
 
 [[package]]
@@ -862,25 +860,6 @@ requires-dist = [
     { name = "pydantic", specifier = ">=2.6" },
     { name = "pydantic-settings", specifier = ">=2.2" },
     { name = "pyyaml" },
-]
-
-[[package]]
-name = "shared-kafka"
-version = "0.1.0"
-source = { editable = "../../shared-kafka" }
-dependencies = [
-    { name = "aiokafka" },
-    { name = "loguru" },
-    { name = "pydantic" },
-    { name = "shared-config" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "aiokafka", specifier = ">=0.12.0" },
-    { name = "loguru", specifier = ">=0.7.3" },
-    { name = "pydantic", specifier = ">=2.11.7" },
-    { name = "shared-config", editable = "../../shared-config" },
 ]
 
 [[package]]

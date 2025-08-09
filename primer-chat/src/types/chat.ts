@@ -37,5 +37,5 @@ export interface ClientChatRequest {
 export interface ApiChatMetaResponse {
 	history_id: string
 	files: ApiFileResponse[]
-	messages: ApiChatMessageResponse[]
+	requests: ApiChatMessageResponse[]
 }

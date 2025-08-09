@@ -4,15 +4,11 @@ import re
 from typing import List, get_args
 
 from shared_adapters.openai import OpenAIFullCompletions
-from shared_models.indexation.core import (
-    HTMLTag,
-    LineSignature,
-    ResultChunk,
-    SegmentationResult,
-)
+from shared_models.indexation.core import HTMLTag
 from shared_models.openai.completions import ChatMessage, Usage
 from src.config import config
 from src.exceptions import ResponseParsingError
+from src.models.core import LineSignature, ResultChunk, SegmentationResult
 from src.prompts.render import render_prompt
 
 semaphore = asyncio.Semaphore(config.max_concurrent_segments)

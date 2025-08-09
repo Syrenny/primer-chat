@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel
 
 
 class WorkerRequestContext(BaseModel):
@@ -8,5 +8,3 @@ class WorkerRequestContext(BaseModel):
     user_id: UUID
     file_id: UUID | None = None
     history_id: UUID | None = None
-
-    model_config = ConfigDict(strict=True, json_encoders={UUID: str})

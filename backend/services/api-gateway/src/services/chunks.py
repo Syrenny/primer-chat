@@ -12,10 +12,25 @@ from src.db.models import DBChunk
 
 class ChunkService:
     @classmethod
+    async def list_chunks(
+        cls,
+        user_id: UUID,
+        file_id: UUID,
+        session: AsyncSession,
+    ) -> list[ExtendedIndexedChunk]:
+        db_chunks = await DaoChunks.list_chunks(
+            session=session,
+            user_id=user_id,
+            file_id=file_id,
+        )
+        return cls.from_db_chunks(db_chunks)
+
+    @classmethod
     async def save_chunks(
         cls,
         user_id: UUID,
         file_id: UUID,
+        filename: str,
         session: AsyncSession,
         chunks: list[IndexedChunk],
     ) -> None:
@@ -23,6 +38,7 @@ class ChunkService:
             session=session,
             user_id=user_id,
             file_id=file_id,
+            filename=filename,
             chunks=chunks,
         )
 
@@ -47,6 +63,7 @@ class ChunkService:
         return [
             ExtendedIndexedChunk(
                 file_id=db_chunk.file_id,
+                filename=db_chunk.filename,
                 content=db_chunk.content,
                 embedding=db_chunk.embedding.tolist(),
                 html_tag=db_chunk.html_tag,
