@@ -14,12 +14,11 @@ jobs:
             - name: Checkout
               uses: actions/checkout@v4
 
-            - name: Stop previous containers
-              run: make down
-
-            - name: Build and run containers
+            - name: Create .env for docker compose (repo root)
+              shell: bash
               run: |
-                  cat > docker/.env <<'EOF'
+                  set -euo pipefail
+                  cat > .env <<'EOF'
                   OPENAI_KEY=${{ secrets.OPENAI_KEY }}
                   EMBEDDINGS_KEY=${{ secrets.EMBEDDINGS_KEY }}
                   POSTGRES_DB=${{ secrets.POSTGRES_DB }}
@@ -30,4 +29,9 @@ jobs:
                   MINIO_USER=${{ secrets.MINIO_USER }}
                   MINIO_PASSWORD=${{ secrets.MINIO_PASSWORD }}
                   EOF
-                  make up
+
+            - name: Stop previous containers
+              run: make down
+
+            - name: Build and run containers
+              run: make up
