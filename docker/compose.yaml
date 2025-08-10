@@ -3,6 +3,7 @@ services:
         build:
             context: ../primer-chat
             dockerfile: ../docker/Dockerfile.frontend
+            network: host
         ports:
             - '80:80'
         networks: [chat-net]
@@ -16,6 +17,7 @@ services:
             dockerfile: ../docker/Dockerfile.service
             args:
                 SERVICE_DIR: api-gateway
+            network: host
         networks: [chat-net]
         volumes:
             - /etc/localtime:/etc/localtime:ro
@@ -48,6 +50,7 @@ services:
             dockerfile: ../docker/Dockerfile.service
             args:
                 SERVICE_DIR: indexation_worker
+            network: host
         networks: [chat-net]
         volumes:
             - /etc/localtime:/etc/localtime:ro
@@ -74,6 +77,7 @@ services:
             dockerfile: ../docker/Dockerfile.service
             args:
                 SERVICE_DIR: generation_worker
+            network: host
         networks: [chat-net]
         volumes:
             - /etc/localtime:/etc/localtime:ro
