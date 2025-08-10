@@ -1,7 +1,7 @@
 import asyncio
 from asyncio import TimeoutError as AsyncTimeoutError
 from contextlib import AsyncExitStack, aclosing, asynccontextmanager
-from typing import AsyncGenerator, AsyncIterator
+from typing import AsyncGenerator
 from uuid import UUID
 
 import async_timeout
@@ -49,7 +49,7 @@ class GenerationService:
     @classmethod
     async def publish(
         cls, user_id: UUID, history_id: UUID, session: AsyncSession, query: str
-    ) -> tuple[UUID]:
+    ) -> UUID:
         async with init_generation_context(
             user_id=user_id, history_id=history_id, session=session, query=query
         ) as request_id:
@@ -59,7 +59,7 @@ class GenerationService:
                 )
             )
 
-            dto_chunks = await RetrieveService.retrieve_and_save(
+            extended_chunks = await RetrieveService.retrieve_and_save(
                 session=session,
                 user_id=user_id,
                 history_id=history_id,
@@ -81,7 +81,7 @@ class GenerationService:
                 context=context,
                 history=history_messages_with_summary,
                 query=query,
-                chunks=ExtendedIndexedChunk.to_indexed_chunks(dto_chunks),
+                chunks=extended_chunks,
                 persona=persona,
             )
 
@@ -100,7 +100,7 @@ class GenerationService:
     @classmethod
     async def stream_model_chunks(
         cls, user_id: UUID, history_id: UUID, request_id: UUID
-    ) -> AsyncIterator[str]:
+    ) -> AsyncGenerator[str, None]:
         try:
             async with async_timeout.timeout(
                 local_config.generation.listen_timeout_seconds
@@ -123,7 +123,7 @@ class GenerationService:
         user_id: UUID,
         history_id: UUID,
         request_id: UUID,
-    ) -> AsyncIterator[GenerationWorkerChunkResponse]:
+    ) -> AsyncGenerator[GenerationWorkerChunkResponse, None]:
         async for raw in RedisGenerationBuffer.listen(user_id=user_id):
             try:
                 response = GenerationWorkerChunkResponse.model_validate_json(raw)
@@ -141,7 +141,7 @@ class GenerationService:
     @classmethod
     async def stream_retrieved_chunks(
         cls, user_id: UUID, request_id: UUID
-    ) -> AsyncIterator[ExtendedIndexedChunk]:
+    ) -> AsyncGenerator[ExtendedIndexedChunk, None]:
         try:
             request = await RedisGenerationRequestStore.get(
                 user_id=user_id, request_id=request_id
@@ -158,7 +158,7 @@ class GenerationService:
                     type="retrieved",
                     positions=chunk.positions,
                     file_id=chunk.file_id,
-                    filename=chunk.file_id,
+                    filename=chunk.filename,
                 ).model_dump_json()
                 + "\n\n"
             )

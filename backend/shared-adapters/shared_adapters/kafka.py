@@ -18,9 +18,17 @@ class BaseKafkaProducer(ABC):
         self._started = False
 
     async def start(self) -> None:
-        await self._producer.start()
-        self._started = True
-        logger.debug("Kafka producer started")
+        try:
+            await asyncio.wait_for(self._producer.start(), timeout=10)
+            self._started = True
+            logger.debug("Kafka producer started: %s", config.kafka.bootstrap_servers)
+        except Exception as e:
+            logger.error(
+                "Kafka producer bootstrap failed to %s: %r",
+                config.kafka.bootstrap_servers,
+                e,
+            )
+            raise
 
     async def stop(self) -> None:
         try:
@@ -79,9 +87,17 @@ class BaseKafkaConsumer(ABC):
         self._stopped = asyncio.Event()
 
     async def start(self) -> None:
-        logger.debug(f"Starting Kafka consumer for topic: {self.topic}")
-        await self._consumer.start()
-        self._task = asyncio.create_task(self._consume_loop())
+        try:
+            logger.debug(f"Starting Kafka consumer for topic: {self.topic}")
+            await asyncio.wait_for(self._consumer.start(), timeout=10)
+            self._task = asyncio.create_task(self._consume_loop())
+        except Exception as e:
+            logger.error(
+                "Kafka consumer failed to start %s: %r",
+                config.kafka.bootstrap_servers,
+                e,
+            )
+            raise
 
     async def stop(self) -> None:
         self._stopped.set()

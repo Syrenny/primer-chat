@@ -21,6 +21,16 @@ class FitzService:
         )
 
     @classmethod
+    def _to_pdf_coords_top_left_bbox(
+        cls, bbox: tuple[float, float, float, float], page: fitz.Page
+    ) -> list[float]:
+        # bbox из get_text("dict"): [x0, y0, x1, y1], origin top-left
+        x0, y0, x1, y1 = bbox
+        H = float(page.rect.height)  # высота страницы в pt
+        # инвертируем y и меняем местами нижнюю/верхнюю границы
+        return [x0, H - y1, x1, H - y0]
+
+    @classmethod
     def extract_lines(cls, pages: List[fitz.Page]) -> List[LineSignature]:
         result = []
         line_index = 0
@@ -36,19 +46,22 @@ class FitzService:
                         span["text"]
                         for span in line.get("spans", [])
                         if span.get("text")
-                    )
-                    if not line_content.strip():
+                    ).strip()
+                    if not line_content:
                         continue
 
-                    main_span = line["spans"][0]
+                    # Лучше брать bbox всей линии, а не первого спана
+                    # (меньше «съезда» по высоте и ширине)
+                    line_bbox = line.get("bbox") or line["spans"][0]["bbox"]
+
+                    pdf_bbox = cls._to_pdf_coords_top_left_bbox(line_bbox, page)
+
                     result.append(
                         LineSignature(
                             index=line_index,
                             content=line_content,
-                            style=cls.style_key(main_span),
-                            position=PdfLinePosition(
-                                page=i + 1, xyxy=list(main_span.get("bbox"))
-                            ),
+                            style=cls.style_key(line["spans"][0]),
+                            position=PdfLinePosition(page=i + 1, xyxy=list(pdf_bbox)),
                         )
                     )
                     line_index += 1

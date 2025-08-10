@@ -29,6 +29,6 @@ dependencies = [
 ]
 
 [tool.uv.sources]
-shared-config = { path = "../../shared-config", editable = true }
-shared-adapters = { path = "../../shared-adapters", editable = true }
-shared-models = { path = "../../shared-models", editable = true }
+shared-adapters = { path = "../../shared-adapters" }
+shared-models = { path = "../../shared-models" }
+shared-config = { path = "../../shared-config" }

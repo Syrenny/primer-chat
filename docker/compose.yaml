@@ -37,7 +37,6 @@ services:
             POSTGRES_USER: ${POSTGRES_USER?required}
             POSTGRES_PASSWORD: ${POSTGRES_PASSWORD?required}
         restart: always
-        command: uv run -m src.main
         depends_on:
             postgres: { condition: service_healthy }
             redis: { condition: service_healthy }
@@ -64,12 +63,9 @@ services:
             POSTGRES_USER: ${POSTGRES_USER?required}
             POSTGRES_PASSWORD: ${POSTGRES_PASSWORD?required}
         restart: always
-        command: uv run -m indexation_consumer
         depends_on:
-            postgres: { condition: service_healthy }
-            redis: { condition: service_healthy }
-            minio: { condition: service_healthy }
-            kafka: { condition: service_healthy }
+            api-gateway:
+                condition: service_healthy
 
     generation-worker:
         build:
@@ -91,9 +87,6 @@ services:
             POSTGRES_USER: ${POSTGRES_USER?required}
             POSTGRES_PASSWORD: ${POSTGRES_PASSWORD?required}
         restart: always
-        command: uv run -m generation_consumer
         depends_on:
-            postgres: { condition: service_healthy }
-            redis: { condition: service_healthy }
-            minio: { condition: service_healthy }
-            kafka: { condition: service_healthy }
+            api-gateway:
+                condition: service_healthy

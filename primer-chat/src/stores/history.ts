@@ -3,13 +3,18 @@ import { createStore } from 'zustand'
 import { apiChatMessages } from '../api/history'
 import type { ApiChatMessageResponse, ClientChatRequest } from '../types/chat'
 import { RoleType } from '../types/chat'
+import type { IndexedChunk } from '../types/chunks'
+
 export interface HistoryState {
 	requests: ClientChatRequest[]
 	isHistoryLoading: boolean
 
 	loadHistory: (historyId: string) => Promise<void>
-	addUserMessage: (content: string) => void
+	startUserRequest: (historyId: string, content: string) => string
+	attachRetrievedChunks: (chunks: IndexedChunk[]) => void
 	updateAssistantMessage: (content: string) => void
+    failLastRequest: (errorText: string) => void
+
 	clearHistory: () => void
 }
 
@@ -39,10 +44,11 @@ export const historyStore = createStore<HistoryState>((set, _) => ({
 		}
 	},
 
-	addUserMessage: (content: string) => {
+	startUserRequest: (historyId, content) => {
+		const requestId = uuidv4()
 		const newRequest: ClientChatRequest = {
-			requestId: uuidv4(),
-			historyId: '', // пока можно оставить пустым — подставится позже при сохранении
+			requestId,
+			historyId,
 			timestamp: new Date().toISOString(),
 			chunks: [],
 			userMessage: {
@@ -50,44 +56,64 @@ export const historyStore = createStore<HistoryState>((set, _) => ({
 				content,
 			},
 		}
-
-		set(state => ({
-			requests: [...state.requests, newRequest],
-		}))
+		set(state => ({ requests: [...state.requests, newRequest] }))
+		return requestId
 	},
 
-	updateAssistantMessage: content => {
+	attachRetrievedChunks: chunks => {
+		if (!chunks?.length) return
 		set(state => {
+			if (state.requests.length === 0) return state
 			const prev = state.requests
-			if (prev.length === 0) return {}
-
 			const last = prev[prev.length - 1]
-
-			if (!last.assistantMessage) {
-				const updated: ClientChatRequest = {
-					...last,
-					assistantMessage: {
-						role: RoleType.Assistant,
-						content,
-					},
-				}
-				return {
-					requests: [...prev.slice(0, -1), updated],
-				}
-			}
-
 			const updated: ClientChatRequest = {
 				...last,
-				assistantMessage: {
-					...last.assistantMessage,
-					content: last.assistantMessage.content + content,
-				},
+				chunks: [...last.chunks, ...chunks], // важный момент: заменяем на актуальные из сервера
 			}
-			return {
-				requests: [...prev.slice(0, -1), updated],
-			}
+			return { requests: [...prev.slice(0, -1), updated] }
 		})
 	},
 
+	updateAssistantMessage: content => {
+		if (!content) return
+		set(state => {
+			const prev = state.requests
+			if (prev.length === 0) return state
+			const last = prev[prev.length - 1]
+
+			const updated: ClientChatRequest = !last.assistantMessage
+				? {
+						...last,
+						assistantMessage: { role: RoleType.Assistant, content },
+				  }
+				: {
+						...last,
+						assistantMessage: {
+							...last.assistantMessage,
+							content: last.assistantMessage.content + content,
+						},
+				  }
+
+			return { requests: [...prev.slice(0, -1), updated] }
+		})
+	},
+
+	failLastRequest: errorText => {
+		set(state => {
+			const prev = state.requests
+			if (prev.length === 0) return state
+			const last = prev[prev.length - 1]
+			const updated: ClientChatRequest = {
+				...last,
+				assistantMessage: {
+					role: RoleType.Assistant,
+					content:
+						(last.assistantMessage?.content || '') +
+						`\n\n⚠️ ${errorText}`,
+				},
+			}
+			return { requests: [...prev.slice(0, -1), updated] }
+		})
+	},
 	clearHistory: () => set({ requests: [] }),
 }))

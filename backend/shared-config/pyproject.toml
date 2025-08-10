@@ -11,8 +11,13 @@ dependencies = [
     "loguru"
 ]
 
-[tool.setuptools.packages.find]
-include = ["shared_config*"]
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["shared_config"]
+include-package-data = true
 
 [tool.setuptools.package-data]
-shared_config = ["config.*.yaml"]
+shared_config = ["*.env", "config.*.yaml"]

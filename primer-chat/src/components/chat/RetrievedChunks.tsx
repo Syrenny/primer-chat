@@ -9,10 +9,13 @@ interface RetrievedChunksProps {
 export function RetrievedChunks({ chunks }: RetrievedChunksProps) {
 	if (!chunks.length) return null
 
-	const scrollToChunk = useStore(pdfViewerStore, s => s.scrollToChunk)
+	const highlightPositions = useStore(
+		pdfViewerStore,
+		s => s.highlightPositions
+	)
 
 	const handleClick = async (index: number) => {
-		scrollToChunk(chunks[index])
+		highlightPositions(chunks[index].positions)
 	}
 
 	return (
@@ -22,14 +25,15 @@ export function RetrievedChunks({ chunks }: RetrievedChunksProps) {
 			</div>
 			<ul className='space-y-1 border-l-1 border-primary pl-3'>
 				{chunks.map((chunk, idx) => (
-					<li>
+					<li key={idx}>
 						<button
 							type='button'
 							onClick={() => handleClick(idx)}
 							className='flex items-center w-full text-left text-primary hover:underline hover:text-primary/90 transition-colors max-w-xs hover:cursor-pointer'
 						>
 							<span className='truncate flex-1'>
-								{chunk.filename} (стр. {chunk.positions[0].page})
+								{chunk.filename} (стр. {chunk.positions[0].page}
+								)
 							</span>
 						</button>
 					</li>

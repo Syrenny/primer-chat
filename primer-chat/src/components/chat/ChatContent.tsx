@@ -73,7 +73,7 @@ const ChatContent = ({ historyId }: ChatContentProps) => {
 					<div className='flex flex-col w-full pt-6 pb-24 space-y-8 px-3'>
 						{requests.map(req => {
 							return (
-								<div key={req.requestId}>
+								<div key={req.requestId} className='flex flex-col gap-y-4'>
 									<UserMessage
 										key={`user_${req.requestId}`}
 										request={req}

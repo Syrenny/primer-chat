@@ -1,88 +1,190 @@
+// ChatInput.tsx
 import { Button } from '@/components/ui/button'
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { generationStore } from '@/stores/generation'
-import { ArrowUp } from 'lucide-react'
-import React, { useRef, useState } from 'react'
+import clsx from 'clsx'
+import { ArrowUp, Loader2 } from 'lucide-react'
+import React, { useEffect, useRef, useState } from 'react'
 import { useStore } from 'zustand'
 
 type ChatInputProps = {
 	onSubmit: (input: string) => void
+	maxRows?: number
 }
 
-const ChatInput: React.FC<ChatInputProps> = ({ onSubmit }) => {
-	const [message, setMessage] = useState('')
+const ChatInput: React.FC<ChatInputProps> = ({ onSubmit, maxRows = 6 }) => {
+	const lineHeight = 24
+	const maxPx = lineHeight * (maxRows ?? 6)
+	const scrollAreaRef = useRef<HTMLDivElement>(null)
 
-	// Generation store
+	const [message, setMessage] = useState('')
+	const [isComposing, setIsComposing] = useState(false)
+
 	const isWaitingForGeneration = useStore(
 		generationStore,
-		state => state.isWaitingForGeneration
+		s => s.isWaitingForGeneration
 	)
-	const isGenerating = useStore(generationStore, state => state.isGenerating)
+	const isGenerating = useStore(generationStore, s => s.isGenerating)
+	const isBusy = isWaitingForGeneration || isGenerating
 
-	const textareaRef = useRef<HTMLTextAreaElement>(null)
+	const inputRef = useRef<HTMLDivElement>(null)
+	const containerRef = useRef<HTMLDivElement>(null)
+
+	const readText = () =>
+		(inputRef.current?.innerText ?? '').replace(/\u00A0/g, ' ') // nbsp → space
+
+	const adjustHeight = () => {
+		const el = inputRef.current
+		const root = scrollAreaRef.current
+		if (!el || !root) return
+
+		// Сначала сбрасываем, чтобы scrollHeight измерился честно
+		el.style.height = 'auto'
+		// Контент в contenteditable может раскладываться на div/p — используем scrollHeight
+		const content = el.scrollHeight
+		const next = Math.min(content, maxPx)
+		root.style.height = `${next}px`
+	}
+
+	useEffect(() => {
+		adjustHeight()
+	}, [message])
+
+	useEffect(() => {
+		adjustHeight()
+	}, [])
+
+	const clearInput = () => {
+		if (inputRef.current) {
+			inputRef.current.innerText = ''
+			inputRef.current.style.height = 'auto'
+		}
+		setMessage('')
+		adjustHeight()
+	}
 
 	const handleSubmit = (e: React.KeyboardEvent | React.MouseEvent) => {
 		e.preventDefault()
-		if (!message.trim() || isWaitingForGeneration || isGenerating) return
-		setMessage('')
-		onSubmit(message)
-		if (textareaRef.current) {
-			textareaRef.current.style.height = 'auto'
-		}
+		const text = readText().trim()
+		if (!text || isBusy) return
+		onSubmit(text)
+		clearInput()
 	}
 
-	const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-		setMessage(e.target.value)
-
-		const textarea = textareaRef.current
-		if (textarea) {
-			textarea.style.height = 'auto'
-			textarea.style.height = `${Math.min(
-				textarea.scrollHeight,
-				6 * 24
-			)}px`
-		}
-	}
-
-	const handleKeydown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+	const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+		if (isComposing) return
 		if (event.key === 'Enter' && !event.shiftKey) {
 			event.preventDefault()
 			handleSubmit(event)
 		}
 	}
 
-	return (
-		<div className='relative flex flex-col h-full w-full items-center rounded-4xl bg-secondary text-foreground shadow-md'>
-			<div className='flex w-full flex-1 border-none bg-transparent pt-5 pb-2'>
-				<div className='flex min-h-full w-full flex-col'>
-					<textarea
-						ref={textareaRef}
-						autoFocus
-						value={message}
-						rows={2}
-						style={{ lineHeight: '24px' }}
-						className='max-h-[6lh] w-full resize-none overflow-y-auto overflow-x-hidden border-0 bg-transparent px-6 outline-none focus:ring-0 focus-visible:ring-0 text-[18px] scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent dark:scrollbar-thumb-gray-600'
-						onChange={handleChange}
-						onKeyDown={handleKeydown}
-						placeholder='Спросите что-нибудь...'
-					></textarea>
-				</div>
-			</div>
+	const handleInput = () => {
+		setMessage(readText())
+	}
 
-			<div className='flex justify-end w-full h-fit px-6 pb-4'>
-				<Button
-					variant='default'
-					size='icon'
-					className='hover:cursor-pointer size-8'
-					disabled={
-						isWaitingForGeneration ||
-						isGenerating ||
-						!message.trim()
-					}
-					onClick={handleSubmit}
-				>
-					<ArrowUp className='text-accent size-6' />
-				</Button>
-			</div>
+	const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
+		// Паста только как plain text — исключаем форматирование и картинки
+		e.preventDefault()
+		const text = e.clipboardData.getData('text/plain')
+		document.execCommand('insertText', false, text)
+	}
+
+	const disabled = isBusy || !message.trim()
+	const placeholder = isBusy
+		? 'Генерирую ответ...'
+		: 'Спросите по документу...'
+
+	return (
+		<div
+			ref={containerRef}
+			className={clsx(
+				'flex flex-row py-3 px-3 items-center w-full rounded-2xl border bg-muted/50 text-foreground shadow-sm',
+				'focus-within:ring-0.5 focus-within:ring-primary/40 focus-within:border-primary/50'
+			)}
+		>
+			<ScrollArea
+				ref={scrollAreaRef}
+				className='w-full pr-3'
+				// Нужен relative для плацехолдера внутри
+				style={{ position: 'relative' }}
+			>
+				{!message && (
+					<span
+						aria-hidden
+						className='pointer-events-none text-muted-foreground'
+						style={{
+							position: 'absolute',
+							left: 0,
+							top: 0,
+							lineHeight: `${lineHeight}px`,
+							// соответствие minHeight ниже, чтобы визуально совпадать
+							minHeight: 40,
+							// небольшой отступ как у текста (шрифтовые нюансы)
+							transform: 'translateY(0px)',
+							whiteSpace: 'pre-wrap',
+						}}
+					>
+						{placeholder}
+					</span>
+				)}
+
+				<div
+					ref={inputRef}
+					role='textbox'
+					aria-multiline='true'
+					aria-label='Поле ввода сообщения'
+					contentEditable
+					suppressContentEditableWarning
+					spellCheck
+					style={{
+						lineHeight: `${lineHeight}px`,
+						height: 'auto',
+						minHeight: 40,
+						whiteSpace: 'pre-wrap',
+						wordBreak: 'break-word',
+						overflowWrap: 'anywhere',
+					}}
+					className={clsx(
+						'w-full resize-none bg-transparent',
+						'outline-none focus:outline-none focus:ring-0'
+					)}
+					onInput={handleInput}
+					onKeyDown={handleKeyDown}
+					onPaste={handlePaste}
+					onCompositionStart={() => setIsComposing(true)}
+					onCompositionEnd={() => setIsComposing(false)}
+				/>
+				<ScrollBar orientation='vertical' />
+			</ScrollArea>
+
+			<Button
+				type='button'
+				variant='ghost'
+				size='icon'
+				disabled={disabled}
+				onClick={handleSubmit}
+				className={clsx(
+					'pointer-events-auto ml-1 my-auto mb-0 shadow-sm',
+					'transition-transform active:scale-95',
+					disabled
+						? 'opacity-60 cursor-not-allowed'
+						: 'cursor-pointer'
+				)}
+				aria-label={isBusy ? 'Идёт генерация' : 'Отправить'}
+			>
+				{isBusy ? (
+					<Loader2
+						className='size-5 animate-spin text-primary'
+						aria-hidden='true'
+					/>
+				) : (
+					<ArrowUp
+						className='size-5 text-primary'
+						aria-hidden='true'
+					/>
+				)}
+			</Button>
 		</div>
 	)
 }

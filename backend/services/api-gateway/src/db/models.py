@@ -25,13 +25,13 @@ history_file_association = db.Table(
     db.Column(
         "history_id",
         UUID(as_uuid=True),
-        db.ForeignKey("history_meta.id"),
+        db.ForeignKey("history_meta.id", ondelete="CASCADE"),
         primary_key=True,
     ),
     db.Column(
         "file_id",
         UUID(as_uuid=True),
-        db.ForeignKey("file_meta.id"),
+        db.ForeignKey("file_meta.id", ondelete="CASCADE"),
         primary_key=True,
     ),
 )
@@ -42,13 +42,13 @@ request_chunk_association = db.Table(
     db.Column(
         "request_id",
         UUID(as_uuid=True),
-        db.ForeignKey("generation_requests.id"),
+        db.ForeignKey("generation_requests.id", ondelete="CASCADE"),
         primary_key=True,
     ),
     db.Column(
         "chunk_id",
         UUID(as_uuid=True),
-        db.ForeignKey("chunks.id"),
+        db.ForeignKey("chunks.id", ondelete="CASCADE"),
         primary_key=True,
     ),
 )

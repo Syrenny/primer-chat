@@ -31,17 +31,11 @@ See https://github.com/adobe-type-tools/cmap-resources
     <!-- This snippet is used in production (included from viewer.html) -->
     <link rel="resource" type="application/l10n" href="locale/locale.json">
     <script src="../build/pdf.mjs" type="module"></script>
-
+    <script src="../../../src/components/pdf-viewer/pdfTheme.js" type="module"></script>
     <link rel="stylesheet" href="viewer.css">
-    <link rel="stylesheet" href="pdf-theme.css" />
+    <link rel="stylesheet" href="../../../src/components/pdf-viewer/pdf-theme.css">
 
     <script src="viewer.mjs" type="module"></script>
-    <script>
-        const urlParams = new URLSearchParams(window.location.search)
-        const theme = urlParams.get('theme') || 'light'
-
-        document.documentElement.setAttribute('data-theme', theme)
-    </script>
 </head>
 
 <body tabindex="0">
@@ -985,8 +979,7 @@ See https://github.com/adobe-type-tools/cmap-resources
 
     </div> <!-- outerContainer -->
     <div id="printContainer"></div>
-    <script src="../../../src/components/pdf-viewer/scrollHandler.js"></script>
-
+    <script src="../../../src/components/pdf-viewer/scrollHandler.js" type="module"></script>
 </body>
 
 </html>

@@ -1,6 +1,8 @@
 import { createStore } from 'zustand'
 import { apiCompletionsCreate } from '../api/completions'
 import type { ApiCompletionsChunkResponse } from '../types/completions'
+import { ChunkType } from '../types/completions'
+import { historyStore } from './history'
 
 interface GenerationState {
 	isGenerating: boolean
@@ -9,7 +11,7 @@ interface GenerationState {
 		query: string,
 		historyId: string,
 		opts: {
-			onData: (data: string) => void
+			onData?: (data: string) => void
 			onDone?: () => void
 			onError?: (error: string) => void
 		}
@@ -24,6 +26,8 @@ export const generationStore = createStore<GenerationState>((set, get) => ({
 		const { isGenerating, isWaitingForGeneration } = get()
 		if (isGenerating || isWaitingForGeneration) return
 
+		historyStore.getState().startUserRequest(historyId, query)
+
 		set({ isWaitingForGeneration: true })
 
 		await apiCompletionsCreate(
@@ -35,25 +39,33 @@ export const generationStore = createStore<GenerationState>((set, get) => ({
 					set({ isWaitingForGeneration: false })
 				if (!state.isGenerating) set({ isGenerating: true })
 
-                if (chunk.type === 'retrieved') {
+				if (chunk.type === ChunkType.Retrieved) {
+					historyStore
+						.getState()
+						.attachRetrievedChunks((chunk as any).chunks || [])
+					return
+				}
 
-                }
-
-				if (chunk.type === 'error') {
+				if (chunk.type === ChunkType.Error) {
 					console.error('Error chunk received:', chunk)
 					set({ isGenerating: false, isWaitingForGeneration: false })
 					onError?.(chunk.text)
 					return
 				}
-
-				onData(chunk.text)
+				if (chunk.text) {
+					historyStore.getState().updateAssistantMessage(chunk.text)
+					onData?.(chunk.text)
+				}
 			},
 			() => {
 				set({ isGenerating: false, isWaitingForGeneration: false })
 				onDone?.()
 			},
-			() => {
+			err => {
 				set({ isGenerating: false, isWaitingForGeneration: false })
+				const msg = (err as any)?.message || 'Stream aborted'
+				historyStore.getState().failLastRequest(msg)
+				onError?.(msg)
 			}
 		)
 	},

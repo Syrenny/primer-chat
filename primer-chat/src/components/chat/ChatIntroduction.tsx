@@ -1,4 +1,3 @@
-// ChatIntroduction.tsx
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import {
 	Card,
@@ -17,7 +16,7 @@ export const ChatIntroduction = () => {
 					<div></div>
 				</div>
 			</div>
-			<div className='w-full h-full flex justify-start items-center flex-col px-4 mt-28'>
+			<div className='w-full h-full flex justify-start items-center flex-col mt-28'>
 				<Card className='w-full max-w-xl shadow-md border-muted bg-muted/30'>
 					<CardHeader>
 						<CardTitle className='text-2xl'>

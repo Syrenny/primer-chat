@@ -1,5 +1,4 @@
 import { generationStore } from '@/stores/generation'
-import { historyStore } from '@/stores/history'
 import { useParams } from 'react-router-dom'
 import { useStore } from 'zustand'
 import ChatContent from './ChatContent'
@@ -7,12 +6,6 @@ import ChatInput from './ChatInput'
 
 export default function ChatWindow() {
 	const { historyId } = useParams()
-
-	const addUserMessage = useStore(historyStore, s => s.addUserMessage)
-	const updateAssistantMessage = useStore(
-		historyStore,
-		s => s.updateAssistantMessage
-	)
 
 	const isGenerating = useStore(generationStore, s => s.isGenerating)
 	const isWaitingForGeneration = useStore(
@@ -30,20 +23,14 @@ export default function ChatWindow() {
 		)
 			return
 
-		addUserMessage(input)
-		await startGeneration(input, historyId, {
-			onData: updateAssistantMessage,
-		})
+		await startGeneration(input, historyId, {})
 	}
 
 	return (
-		<div className='relative flex flex-col flex-1 items-center justify-between w-full h-full pb-30'>
+		<div className='relative flex flex-col flex-1 items-center justify-between w-full h-full pb-30 px-4'>
 			<ChatContent historyId={historyId} />
 
-			<div
-				className='absolute bottom-6 w-full shrink-0 bg-transparent'
-				style={{ maxWidth: 'min(97%, 48rem)' }}
-			>
+			<div className='absolute bottom-6 w-full  bg-transparent max-w-[48rem] px-5'>
 				<ChatInput onSubmit={handleSendMessage} />
 			</div>
 		</div>

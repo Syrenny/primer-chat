@@ -1,0 +1,10 @@
+{
+    "python.defaultInterpreterPath": ".venv/bin/python",
+    "python.analysis.extraPaths": [
+        "../../shared-adapters",
+        "../../shared-config",
+        "../../shared-models"
+    ],
+    "python.analysis.typeCheckingMode": "standard",
+    "python.analysis.diagnosticMode": "workspace"
+}
