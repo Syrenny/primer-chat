@@ -242,7 +242,7 @@ requires-dist = [
     { name = "pyyaml", specifier = ">=6.0.2" },
     { name = "shared-adapters", directory = "../../shared-adapters" },
     { name = "shared-config", directory = "../../shared-config" },
-    { name = "shared-models", directory = "../../shared-models" },
+    { name = "shared-models", editable = "../../shared-models" },
     { name = "sqlalchemy", specifier = ">=2.0.41" },
     { name = "uvicorn", specifier = ">=0.35.0" },
 ]
@@ -1601,7 +1601,7 @@ requires-dist = [
 [[package]]
 name = "shared-models"
 version = "0.1.0"
-source = { directory = "../../shared-models" }
+source = { editable = "../../shared-models" }
 
 [[package]]
 name = "shellingham"
