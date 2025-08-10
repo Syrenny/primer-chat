@@ -18,7 +18,7 @@ jobs:
               shell: bash
               run: |
                   set -euo pipefail
-                  cat > .env <<'EOF'
+                  cat > docker/.env <<'EOF'
                   OPENAI_KEY=${{ secrets.OPENAI_KEY }}
                   EMBEDDINGS_KEY=${{ secrets.EMBEDDINGS_KEY }}
                   POSTGRES_DB=${{ secrets.POSTGRES_DB }}
