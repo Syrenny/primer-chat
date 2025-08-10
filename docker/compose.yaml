@@ -1,13 +1,22 @@
 services:
+    frontend:
+        build:
+            context: ../primer-chat
+            dockerfile: ../docker/Dockerfile.frontend
+        ports:
+            - '80:80'
+        networks: [chat-net]
+        depends_on:
+            api-gateway:
+                condition: service_healthy
+        restart: always
     api-gateway:
-        container_name: chat-api-gateway
         build:
             context: ../backend
             dockerfile: ../docker/Dockerfile.service
             args:
                 SERVICE_DIR: api-gateway
-        networks:
-            - chat-net
+        networks: [chat-net]
         volumes:
             - /etc/localtime:/etc/localtime:ro
         healthcheck:
@@ -16,52 +25,71 @@ services:
             timeout: 5s
             retries: 5
             start_period: 10s
+        environment:
+            APP_ENV: prod
+            OPENAI_KEY: ${OPENAI_KEY?required}
+            EMBEDDINGS_KEY: ${EMBEDDINGS_KEY?required}
+            S3_ACCESS_KEY: ${MINIO_USER?required}
+            S3_SECRET_KEY: ${MINIO_PASSWORD?required}
+            POSTGRES_DB: ${POSTGRES_DB?required}
+            POSTGRES_USER: ${POSTGRES_USER?required}
+            POSTGRES_PASSWORD: ${POSTGRES_PASSWORD?required}
         restart: always
-        env_file:
-            - .env.prod
-        depends_on:
-            - kafka
-            - redis
         command: uv run -m src.main
+        depends_on:
+            postgres: { condition: service_healthy }
+            redis: { condition: service_healthy }
+            minio: { condition: service_healthy }
+            kafka: { condition: service_healthy }
 
     indexation-worker:
-        container_name: chat-indexation-worker
         build:
             context: ../backend
             dockerfile: ../docker/Dockerfile.service
             args:
                 SERVICE_DIR: indexation_worker
-        networks:
-            - chat-net
+        networks: [chat-net]
         volumes:
             - /etc/localtime:/etc/localtime:ro
+        environment:
+            APP_ENV: prod
+            OPENAI_KEY: ${OPENAI_KEY?required}
+            EMBEDDINGS_KEY: ${EMBEDDINGS_KEY?required}
+            S3_ACCESS_KEY: ${MINIO_USER?required}
+            S3_SECRET_KEY: ${MINIO_PASSWORD?required}
+            POSTGRES_DB: ${POSTGRES_DB?required}
+            POSTGRES_USER: ${POSTGRES_USER?required}
+            POSTGRES_PASSWORD: ${POSTGRES_PASSWORD?required}
         restart: always
-        env_file:
-            - .env.prod
-        depends_on:
-            - kafka
-            - redis
         command: uv run -m indexation_consumer
+        depends_on:
+            postgres: { condition: service_healthy }
+            redis: { condition: service_healthy }
+            minio: { condition: service_healthy }
+            kafka: { condition: service_healthy }
 
     generation-worker:
-        container_name: chat-generation-worker
         build:
             context: ../backend
             dockerfile: ../docker/Dockerfile.service
             args:
                 SERVICE_DIR: generation_worker
-        networks:
-            - chat-net
+        networks: [chat-net]
         volumes:
             - /etc/localtime:/etc/localtime:ro
+        environment:
+            APP_ENV: prod
+            OPENAI_KEY: ${OPENAI_KEY?required}
+            EMBEDDINGS_KEY: ${EMBEDDINGS_KEY?required}
+            S3_ACCESS_KEY: ${MINIO_USER?required}
+            S3_SECRET_KEY: ${MINIO_PASSWORD?required}
+            POSTGRES_DB: ${POSTGRES_DB?required}
+            POSTGRES_USER: ${POSTGRES_USER?required}
+            POSTGRES_PASSWORD: ${POSTGRES_PASSWORD?required}
         restart: always
-        env_file:
-            - .env.prod
-        depends_on:
-            - kafka
-            - redis
         command: uv run -m generation_consumer
-
-networks:
-    chat-net:
-        driver: bridge
+        depends_on:
+            postgres: { condition: service_healthy }
+            redis: { condition: service_healthy }
+            minio: { condition: service_healthy }
+            kafka: { condition: service_healthy }

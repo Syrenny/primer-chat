@@ -94,4 +94,4 @@ ENV PATH="/app/services/${SERVICE_DIR}/.venv/bin:$PATH" \
 WORKDIR /app/services/${SERVICE_DIR}
 USER app:app
 
-ENTRYPOINT ["uv", "run", "-m", "src.main"]
+ENTRYPOINT ["python", "-m", "src.main"]

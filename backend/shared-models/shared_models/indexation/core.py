@@ -1,7 +1,7 @@
 from typing import List, Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from shared_models.openai.completions import Usage
 from shared_models.openai.embeddings import EmbeddingsUsage
@@ -11,7 +11,7 @@ class PdfLinePosition(BaseModel):
     model_config = ConfigDict(strict=True)
 
     page: int
-    xyxy: list[float, float, float, float]
+    xyxy: list[float] = Field(min_length=4, max_length=4)
 
 
 HTMLTag = Literal["h1", "h2", "h3", "p"]

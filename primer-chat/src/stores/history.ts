@@ -13,7 +13,7 @@ export interface HistoryState {
 	clearHistory: () => void
 }
 
-export const historyStore = createStore<HistoryState>((set, get) => ({
+export const historyStore = createStore<HistoryState>((set, _) => ({
 	requests: [],
 	isHistoryLoading: true,
 

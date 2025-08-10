@@ -35,6 +35,10 @@ export const generationStore = createStore<GenerationState>((set, get) => ({
 					set({ isWaitingForGeneration: false })
 				if (!state.isGenerating) set({ isGenerating: true })
 
+                if (chunk.type === 'retrieved') {
+
+                }
+
 				if (chunk.type === 'error') {
 					console.error('Error chunk received:', chunk)
 					set({ isGenerating: false, isWaitingForGeneration: false })

@@ -59,7 +59,7 @@ export const apiCompletionsCreate = async (
 					onData(parsed)
 				} catch {
 					// fallback: просто передаём как текст, если это невалидный JSON
-					onData({ type: ChunkType.Default, text: trimmed })
+					onData({ type: ChunkType.Response, text: trimmed })
 				}
 			}
 		}
@@ -72,7 +72,7 @@ export const apiCompletionsCreate = async (
 				)
 				onData(parsed)
 			} catch {
-				onData({ type: ChunkType.Default, text: partial.trim() })
+				onData({ type: ChunkType.Response, text: partial.trim() })
 			}
 		}
 

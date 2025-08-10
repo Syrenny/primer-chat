@@ -16,7 +16,6 @@ dependencies = [
 
 [tool.setuptools]
 packages = ["shared_adapters"]
-package-dir = { "" = "src" }
 
 [tool.uv.sources]
 shared-config = { path = "../shared-config", editable = true }

@@ -22,7 +22,7 @@ interface UIState {
 
 export const uiStore = createStore(
 	persist<UIState>(
-		(set, get) => ({
+		(set, _) => ({
 			isSidebarOpen: true,
 			isFilesModalOpen: false,
 			isAddFilesModalOpen: false,

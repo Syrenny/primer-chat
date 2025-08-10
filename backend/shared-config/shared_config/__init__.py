@@ -8,7 +8,7 @@ from pydantic import BaseModel, PostgresDsn, SecretStr, computed_field
 from pydantic_core import MultiHostUrl
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-BASE_DIR = Path(__file__).parent.parent.parent
+BASE_DIR = Path(__file__).parent
 
 
 class Secrets(BaseSettings):
@@ -37,7 +37,7 @@ class Secrets(BaseSettings):
             scheme="postgresql+asyncpg",
             username=self.postgres_user.get_secret_value(),
             password=self.postgres_password.get_secret_value(),
-            host="localhost",
+            host="localhost" if self.is_dev() else "postgres",
             port=5432,
             path=self.postgres_db.get_secret_value(),
         )

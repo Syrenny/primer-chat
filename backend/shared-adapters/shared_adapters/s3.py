@@ -15,7 +15,7 @@ class S3Storage:
         return f"{user_id}/{file_id}.pdf"
 
     @staticmethod
-    def _create_session():
+    def _create_session():  # type: ignore
         return aioboto3.Session().client(
             service_name=config.s3.service_name,
             region_name=config.s3.region,

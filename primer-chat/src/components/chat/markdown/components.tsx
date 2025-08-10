@@ -28,7 +28,6 @@ const extractTextContent = (node: React.ReactNode): string => {
 const CodeComponent: Components['code'] = ({
 	className,
 	children,
-	...props
 }) => {
 	const match = /language-(\w+)/.exec(className || '')
 	const lang = (match && match[1]) || 'text'

@@ -22,13 +22,7 @@ const CodeBlock = ({
 			<CodeBar lang={lang} codeRef={codeRef} />
 			<ScrollArea className='w-full max-w-full'>
 				<Highlight code={code} language={lang} theme={theme}>
-					{({
-						className,
-						style,
-						tokens,
-						getLineProps,
-						getTokenProps,
-					}) => (
+					{({ style, tokens, getLineProps, getTokenProps }) => (
 						<pre
 							ref={codeRef}
 							className={`text-sm p-4 shrink contain-inline-size`}

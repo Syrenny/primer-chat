@@ -10,3 +10,9 @@ dependencies = [
     "pyyaml",
     "loguru"
 ]
+
+[tool.setuptools.packages.find]
+include = ["shared_config*"]
+
+[tool.setuptools.package-data]
+shared_config = ["config.*.yaml"]

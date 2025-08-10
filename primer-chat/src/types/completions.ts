@@ -1,5 +1,6 @@
 export const ChunkType = {
-	Default: 'default',
+	Response: 'response',
+    Retrieved: 'retrieved',
 	Error: 'error',
 } as const
 

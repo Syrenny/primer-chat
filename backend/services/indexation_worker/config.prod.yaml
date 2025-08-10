@@ -1,0 +1,3 @@
+pages_batch_size: 3
+embeddings_batch_size: 10
+max_concurrent_segments: 3

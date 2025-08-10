@@ -13,6 +13,7 @@ from src.api import (
     chunks_router,
     completions_router,
     files_router,
+    health_router,
     history_meta_router,
     messages_router,
 )
@@ -72,6 +73,7 @@ app.include_router(files_router, prefix=prefix)
 app.include_router(history_meta_router, prefix=prefix)
 app.include_router(messages_router, prefix=prefix)
 app.include_router(chunks_router, prefix=prefix)
+app.include_router(health_router, prefix=prefix)
 
 
 if __name__ == "__main__":

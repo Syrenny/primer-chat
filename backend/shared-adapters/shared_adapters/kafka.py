@@ -1,7 +1,8 @@
 import asyncio
 import json
 from abc import ABC, abstractmethod
-from typing import Optional
+from types import TracebackType
+from typing import Optional, Self
 
 from aiokafka import AIOKafkaConsumer, AIOKafkaProducer
 from loguru import logger
@@ -48,11 +49,16 @@ class BaseKafkaProducer(ABC):
             topic=topic, value=data, key=key, headers=headers
         )
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> Self:
         await self.start()
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
         await self.stop()
 
 
@@ -115,9 +121,14 @@ class BaseKafkaConsumer(ABC):
         """Обработать одно сообщение (payload уже dict)."""
         raise NotImplementedError
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> Self:
         await self.start()
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
         await self.stop()

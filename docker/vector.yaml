@@ -1,0 +1,78 @@
+sources:
+  docker:
+    type: docker_logs
+    include_containers: []        # пусто = все
+    exclude_containers:
+      - chat-vector               # не логируем самого себя
+    docker_host: unix:///var/run/docker.sock
+    auto_partial_merge: true
+
+transforms:
+  parse_json:
+    type: remap
+    inputs: [docker]
+    # Попытаться распарсить message как JSON, иначе оставить строкой
+    source: |
+      .log = .message
+      if is_string(.message) {
+        try {
+          .json = parse_json!(.message)
+          .log = .json
+        } else {
+          .json = null
+        }
+      }
+
+  enrich_labels:
+    type: remap
+    inputs: [parse_json]
+    source: |
+      # Лейблы из docker metadata
+      .labels.service = .container_labels["com.docker.compose.service"] ?? .container_name
+      .labels.project = .container_labels["com.docker.compose.project"] ?? "default"
+      .labels.env     = .container_labels["com.example.env"] ?? "local"
+      .labels.image   = .image
+      .labels.container = .container_name
+
+      # Вытащить уровень логов
+      level = null
+      if .json != null {
+        level = to_string!(.json.level) ?? null
+      } else {
+        level = null
+      }
+      if level == null && is_string(.message) {
+        # примитивный хак: ищем префиксы
+        m = downcase!(.message)
+        if starts_with(m, "error") || contains(m, " level=error") { level = "error" }
+        else if starts_with(m, "warn") { level = "warn" }
+        else if starts_with(m, "info") { level = "info" }
+        else if starts_with(m, "debug") { level = "debug" }
+      }
+      .labels.level = level ?? "info"
+
+sinks:
+  loki:
+    type: loki
+    inputs: [enrich_labels]
+    endpoint: http://loki:3100
+    encoding:
+      codec: json
+    out_of_order_action: rewrite_timestamp
+    batch:
+      max_bytes: 1048576
+      timeout_secs: 2
+    labels:
+      service: "{{ labels.service }}"
+      project: "{{ labels.project }}"
+      env: "{{ labels.env }}"
+      container: "{{ labels.container }}"
+      image: "{{ labels.image }}"
+      level: "{{ labels.level }}"
+    remove_label_fields: true
+    # В log_stream используем message/log как тело:
+    # Vector автоматически отправит .message как текст, но мы положили полезную нагрузку в .log
+    # Поэтому выставим:
+    framing:
+      method: text
+    payload_key: log
