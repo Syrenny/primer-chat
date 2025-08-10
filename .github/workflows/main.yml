@@ -19,13 +19,15 @@ jobs:
 
             - name: Build and run containers
               run: |
-                  echo "OPENAI_KEY=${{ secrets.OPENAI_KEY }}" >> ./docker/.env
-                  echo "EMBEDDINGS_KEY=${{ secrets.EMBEDDINGS_KEY }}" >> ./docker/.env
-                  echo "POSTGRES_DB=${{ secrets.POSTGRES_DB }}" >> ./docker/.env
-                  echo "POSTGRES_USER=${{ secrets.POSTGRES_USER }}" >> ./docker/.env
-                  echo "POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}" >> ./docker/.env
-                  echo "MINIO_ROOT_USER=${{ secrets.MINIO_ROOT_USER }}" >> ./docker/.env
-                  echo "MINIO_ROOT_PASSWORD=${{ secrets.MINIO_ROOT_PASSWORD }}" >> ./docker/.env
-                  echo "MINIO_USER=${{ secrets.MINIO_USER }}" >> ./docker/.env
-                  echo "MINIO_PASSWORD=${{ secrets.MINIO_PASSWORD }}" >> ./docker/.env
+                  cat > docker/.env <<'EOF'
+                  OPENAI_KEY=${{ secrets.OPENAI_KEY }}
+                  EMBEDDINGS_KEY=${{ secrets.EMBEDDINGS_KEY }}
+                  POSTGRES_DB=${{ secrets.POSTGRES_DB }}
+                  POSTGRES_USER=${{ secrets.POSTGRES_USER }}
+                  POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+                  MINIO_ROOT_USER=${{ secrets.MINIO_ROOT_USER }}
+                  MINIO_ROOT_PASSWORD=${{ secrets.MINIO_ROOT_PASSWORD }}
+                  MINIO_USER=${{ secrets.MINIO_USER }}
+                  MINIO_PASSWORD=${{ secrets.MINIO_PASSWORD }}
+                  EOF
                   make up
