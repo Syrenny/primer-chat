@@ -42,7 +42,11 @@ export const generationStore = createStore<GenerationState>((set, get) => ({
 				if (chunk.type === ChunkType.Retrieved) {
 					historyStore
 						.getState()
-						.attachRetrievedChunks((chunk as any).chunks || [])
+						.attachRetrievedChunks({
+							positions: chunk.positions,
+							file_id: chunk.file_id,
+							filename: chunk.filename,
+						})
 					return
 				}
 

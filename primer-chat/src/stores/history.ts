@@ -11,7 +11,7 @@ export interface HistoryState {
 
 	loadHistory: (historyId: string) => Promise<void>
 	startUserRequest: (historyId: string, content: string) => string
-	attachRetrievedChunks: (chunks: IndexedChunk[]) => void
+	attachRetrievedChunks: (chunks: IndexedChunk) => void
 	updateAssistantMessage: (content: string) => void
     failLastRequest: (errorText: string) => void
 
@@ -60,15 +60,14 @@ export const historyStore = createStore<HistoryState>((set, _) => ({
 		return requestId
 	},
 
-	attachRetrievedChunks: chunks => {
-		if (!chunks?.length) return
+	attachRetrievedChunks: chunk => {
 		set(state => {
 			if (state.requests.length === 0) return state
 			const prev = state.requests
 			const last = prev[prev.length - 1]
 			const updated: ClientChatRequest = {
 				...last,
-				chunks: [...last.chunks, ...chunks], // важный момент: заменяем на актуальные из сервера
+				chunks: [...last.chunks, chunk], // важный момент: заменяем на актуальные из сервера
 			}
 			return { requests: [...prev.slice(0, -1), updated] }
 		})

@@ -2,7 +2,7 @@ openai:
     model: 'gpt-4o'
     base_url: 'https://api.openai.com/v1'
     temperature: 0.7
-    max_tokens: 10000
+    max_tokens: 15000
     throttle_rate_limit: 60
     throttle_period: 60.0
 

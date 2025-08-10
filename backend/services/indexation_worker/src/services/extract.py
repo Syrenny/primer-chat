@@ -35,7 +35,7 @@ class FitzService:
         result = []
         line_index = 0
 
-        for i, page in enumerate(pages):
+        for page in pages:
             text = page.get_text("dict")
             for block in text.get("blocks", []):
                 if block.get("type") != 0:
@@ -61,7 +61,9 @@ class FitzService:
                             index=line_index,
                             content=line_content,
                             style=cls.style_key(line["spans"][0]),
-                            position=PdfLinePosition(page=i + 1, xyxy=list(pdf_bbox)),
+                            position=PdfLinePosition(
+                                page=int(page.number) + 1, xyxy=list(pdf_bbox)
+                            ),
                         )
                     )
                     line_index += 1
