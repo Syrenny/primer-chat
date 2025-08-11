@@ -26,7 +26,8 @@ export default function PDFViewer({ fileId }: PDFViewerProps) {
 			try {
 				const link = await getFileLink(fileId)
 				if (link) {
-					setFileUrl(link.url.toString())
+					setFileUrl(link.url)
+
 					setError(null)
 				} else {
 					setError('Не удалось получить ссылку на файл.')

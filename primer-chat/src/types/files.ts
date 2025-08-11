@@ -10,5 +10,5 @@ export interface ApiFileStatusResponse {
 }
 
 export interface ApiFileLinkResponse {
-	url: URL
+	url: string
 }

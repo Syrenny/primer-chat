@@ -75,12 +75,6 @@
             if (pos === positions[0]) {
                 // сверим ещё высоту страницы — частая причина «константного сдвига»
                 const debugViewport1 = pageView.pdfPage.getViewport({ scale: 1, rotation: 0 })
-                console.debug('[pc] p=', pos.page, {
-                    pdf_bbox: pos.xyxy,
-                    viewport_used: { width: viewport.width, height: viewport.height, scale: viewport.scale, rotation: viewport.rotation },
-                    page_height_pt_pdfjs: debugViewport1.height,
-                    rect_css: { left, top, width, height }
-                })
             }
         }
     }

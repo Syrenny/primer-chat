@@ -18,6 +18,7 @@ export default defineConfig({
 		host: true,
 		proxy: {
 			'/api': 'http://localhost:8000',
+			'/primer-chat-pdf': 'http://0.0.0.0:9000',
 		},
 	},
 })

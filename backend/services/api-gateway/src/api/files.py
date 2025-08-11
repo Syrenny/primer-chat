@@ -1,3 +1,4 @@
+from urllib.parse import urlparse
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
@@ -77,11 +78,14 @@ async def get_signed_url(
         )
 
     # Генерация ссылки
-    presigned_url = await S3Storage.generate_presigned_url(
+    presigned = await S3Storage.generate_presigned_url(
         user_id=ctx.user_id,
         file_id=file_id,
     )
-    return SignedUrl(url=presigned_url)
+    logger.debug(presigned)
+    parsed = urlparse(presigned)
+    logger.debug(f"{parsed.path}?{parsed.query}")
+    return SignedUrl(url=f"{parsed.path}?{parsed.query}")
 
 
 @router.get(
