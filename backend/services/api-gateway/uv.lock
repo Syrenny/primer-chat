@@ -216,8 +216,6 @@ dependencies = [
     { name = "python-multipart" },
     { name = "pyyaml" },
     { name = "shared-adapters" },
-    { name = "shared-config" },
-    { name = "shared-models" },
     { name = "sqlalchemy" },
     { name = "uvicorn" },
 ]
@@ -241,8 +239,6 @@ requires-dist = [
     { name = "python-multipart", specifier = ">=0.0.20" },
     { name = "pyyaml", specifier = ">=6.0.2" },
     { name = "shared-adapters", directory = "../../shared-adapters" },
-    { name = "shared-config", directory = "../../shared-config" },
-    { name = "shared-models", editable = "../../shared-models" },
     { name = "sqlalchemy", specifier = ">=2.0.41" },
     { name = "uvicorn", specifier = ">=0.35.0" },
 ]
@@ -1601,7 +1597,7 @@ requires-dist = [
 [[package]]
 name = "shared-models"
 version = "0.1.0"
-source = { editable = "../../shared-models" }
+source = { directory = "../../shared-models" }
 
 [[package]]
 name = "shellingham"

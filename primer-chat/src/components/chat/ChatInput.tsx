@@ -99,28 +99,17 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSubmit, maxRows = 6 }) => {
 		<div
 			ref={containerRef}
 			className={clsx(
-				'flex flex-row py-3 px-3 items-center w-full rounded-2xl border bg-muted/50 text-foreground shadow-sm',
+				'flex flex-row py-2 px-3 items-center w-full rounded-2xl border bg-muted/50 text-foreground shadow-sm',
 				'focus-within:ring-0.5 focus-within:ring-primary/40 focus-within:border-primary/50'
 			)}
 		>
-			<ScrollArea
-				ref={scrollAreaRef}
-				className='w-full pr-3'
-				// Нужен relative для плацехолдера внутри
-				style={{ position: 'relative' }}
-			>
+			<ScrollArea ref={scrollAreaRef} className='w-full pr-3'>
 				{!message && (
 					<span
 						aria-hidden
-						className='pointer-events-none text-muted-foreground'
+						className='pointer-events-none text-muted-foreground content-center absolute h-full'
 						style={{
-							position: 'absolute',
-							left: 0,
-							top: 0,
 							lineHeight: `${lineHeight}px`,
-							// соответствие minHeight ниже, чтобы визуально совпадать
-							minHeight: 40,
-							// небольшой отступ как у текста (шрифтовые нюансы)
 							transform: 'translateY(0px)',
 							whiteSpace: 'pre-wrap',
 						}}
@@ -128,7 +117,6 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSubmit, maxRows = 6 }) => {
 						{placeholder}
 					</span>
 				)}
-
 				<div
 					ref={inputRef}
 					role='textbox'
@@ -139,15 +127,13 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSubmit, maxRows = 6 }) => {
 					spellCheck
 					style={{
 						lineHeight: `${lineHeight}px`,
-						height: 'auto',
-						minHeight: 40,
 						whiteSpace: 'pre-wrap',
 						wordBreak: 'break-word',
 						overflowWrap: 'anywhere',
 					}}
 					className={clsx(
 						'w-full resize-none bg-transparent',
-						'outline-none focus:outline-none focus:ring-0'
+						'outline-none focus:outline-none focus:ring-0 h-full'
 					)}
 					onInput={handleInput}
 					onKeyDown={handleKeyDown}
@@ -155,6 +141,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSubmit, maxRows = 6 }) => {
 					onCompositionStart={() => setIsComposing(true)}
 					onCompositionEnd={() => setIsComposing(false)}
 				/>
+
 				<ScrollBar orientation='vertical' />
 			</ScrollArea>
 
