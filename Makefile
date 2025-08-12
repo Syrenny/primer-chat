@@ -17,6 +17,13 @@ ps:
 logs:
 	$(COMPOSE) $(FILES) logs -f --tail=100 $(service)
 
+rebuild-service:
+	$(COMPOSE) $(FILES) build $(service)
+	$(COMPOSE) $(FILES) up -d $(service)
+
+exec:
+	$(COMPOSE) $(FILES) exec $(service) /bin/sh
+
 # --- Infra only (infra) ---
 
 up-infra:

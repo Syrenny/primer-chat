@@ -14,7 +14,7 @@ export function PDFViewerEmbed({ fileUrl }: { fileUrl: string }) {
 	const viewerSrc = useMemo(
 		() =>
 			`/pdfjs/web/viewer.html?file=${encodeURIComponent(
-				`${window.location.origin}${fileUrl}`
+				`${window.origin}${fileUrl}`
 			)}`,
 		[fileUrl]
 	)
@@ -49,7 +49,7 @@ export function PDFViewerEmbed({ fileUrl }: { fileUrl: string }) {
 				s.type = 'module'
 				s.id = 'primer-scroll-js'
 				s.src = scrollHandlerJsUrl
-				doc.head.appendChild(s)
+				doc.body.appendChild(s)
 			}
 		}
 

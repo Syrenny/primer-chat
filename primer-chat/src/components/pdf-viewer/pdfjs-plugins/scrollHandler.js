@@ -1,4 +1,3 @@
-// scrollHandler.js
 (() => {
     const HIGHLIGHT_LAYER_CLASS = 'pc-highlight-layer'
     const HIGHLIGHT_BOX_CLASS = 'pc-highlight-box'
