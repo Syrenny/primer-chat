@@ -1022,8 +1022,8 @@ requires-dist = [
     { name = "asyncio-throttle", specifier = ">=1.0.2" },
     { name = "openai", specifier = ">=1.97.1" },
     { name = "redis", specifier = ">=6.2.0" },
-    { name = "shared-config", directory = "../../shared-config" },
-    { name = "shared-models", directory = "../../shared-models" },
+    { name = "shared-config", editable = "../../shared-config" },
+    { name = "shared-models", editable = "../../shared-models" },
 ]
 
 [[package]]

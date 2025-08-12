@@ -16,7 +16,12 @@ class BatchEmbedder:
         self.embeddings_usage = EmbeddingsUsage()
 
     def append(self, content: str) -> None:
-        self._buffered_texts.append(content)
+        text = (content or "").strip()
+
+        if text:
+            self._buffered_texts.append(text)
+        else:
+            logger.debug("Skipped empty text in BatchEmbedder.append()")
 
     def _validate_embeddings(self, response: EmbeddingsResponse) -> None:
         for emb in response.embeddings:

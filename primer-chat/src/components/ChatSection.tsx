@@ -8,6 +8,7 @@ import ChatItem from './ChatItem'
 import CreateChatButton from './CreateChatButton'
 import { OpenFilesModalButton } from './OpenFilesModalButton'
 import { uiStore } from '@/stores/ui'
+import AddFilesToChatModal from './modal/AddFilesToChatModal'
 
 
 
@@ -21,6 +22,8 @@ export default function ChatSection() {
 
 	const { goToChat } = useChatNavigation()
 
+    const addFilesModalChatId = useStore(uiStore, s => s.addFilesModalChatId)
+
 	useEffect(() => {
 		fetchChats()
 	}, [])
@@ -31,6 +34,9 @@ export default function ChatSection() {
 
 	return (
 		<div className='flex-1 overflow-auto w-full pl-2'>
+			{addFilesModalChatId && (
+				<AddFilesToChatModal historyId={addFilesModalChatId} />
+			)}
 			<OpenFilesModalButton />
 			<CreateChatButton />
 			<h3 className='text-md font-normal pt-4 pb-2 text-muted-foreground select-none'>
@@ -45,7 +51,7 @@ export default function ChatSection() {
 				>
 					{chats.map(chat => (
 						<ChatItem
-							key={chat.history_id}
+							key={`chat_item_${chat.history_id}`}
 							chat={chat}
 							onSelect={() => handleSelectChat(chat.history_id)}
 						/>

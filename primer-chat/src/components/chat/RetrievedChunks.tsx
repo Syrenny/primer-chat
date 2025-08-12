@@ -1,3 +1,4 @@
+import { useChatNavigation } from '@/hooks/useChatNavigation'
 import { pdfViewerStore } from '@/stores/pdfViewer'
 import type { IndexedChunk } from '@/types/chunks'
 import { useStore } from 'zustand'
@@ -9,12 +10,17 @@ interface RetrievedChunksProps {
 export function RetrievedChunks({ chunks }: RetrievedChunksProps) {
 	if (!chunks.length) return null
 
+	const { historyId, goTo } = useChatNavigation()
+
 	const highlightPositions = useStore(
 		pdfViewerStore,
 		s => s.highlightPositions
 	)
 
 	const handleClick = async (index: number) => {
+		if (!historyId) return
+        console.log('File ID', chunks[index].file_id)
+		goTo(historyId, chunks[index].file_id)
 		highlightPositions(chunks[index].positions)
 	}
 

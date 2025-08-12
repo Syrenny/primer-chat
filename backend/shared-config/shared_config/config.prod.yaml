@@ -54,5 +54,14 @@ redis:
         port: 6379
         db: 0
 
-    buffer:
+    generation_buffer:
         ttl_seconds: 600
+
+    generation_request_buffer:
+        ttl_seconds: 600
+
+    indexation_progress_buffer:
+        maxlen: 2000
+        ttl_seconds: 86400 # хранить сутки
+        xread_block_ms:  5000
+        xread_batch: 100

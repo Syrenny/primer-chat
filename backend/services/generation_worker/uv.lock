@@ -839,14 +839,14 @@ requires-dist = [
     { name = "asyncio-throttle", specifier = ">=1.0.2" },
     { name = "openai", specifier = ">=1.97.1" },
     { name = "redis", specifier = ">=6.2.0" },
-    { name = "shared-config", directory = "../../shared-config" },
-    { name = "shared-models", directory = "../../shared-models" },
+    { name = "shared-config", editable = "../../shared-config" },
+    { name = "shared-models", editable = "../../shared-models" },
 ]
 
 [[package]]
 name = "shared-config"
 version = "0.1.0"
-source = { directory = "../../shared-config" }
+source = { editable = "../../shared-config" }
 dependencies = [
     { name = "loguru" },
     { name = "pydantic" },
@@ -865,7 +865,7 @@ requires-dist = [
 [[package]]
 name = "shared-models"
 version = "0.1.0"
-source = { directory = "../../shared-models" }
+source = { editable = "../../shared-models" }
 
 [[package]]
 name = "six"

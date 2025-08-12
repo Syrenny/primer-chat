@@ -2,6 +2,7 @@ from urllib.parse import urlparse
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
+from fastapi.responses import StreamingResponse
 from loguru import logger
 from shared_adapters.s3 import S3Storage
 from src.db.dao import DaoFileMeta
@@ -17,18 +18,29 @@ router = APIRouter()
     "/files",
     tags=["Files"],
     summary="Upload a file",
-    status_code=status.HTTP_201_CREATED,
 )
 async def add_file(
     file: UploadFile,
     file_service: FileService = Depends(get_file_service),
     ctx: RequestContext = Depends(),
-) -> FileMeta:
-    response = await file_service.add_file(
+) -> StreamingResponse:
+    file_meta = await file_service.add_file(
         upload_file=file, session=ctx.session, user_id=ctx.user_id
     )
 
-    return response
+    stream = file_service.listen_indexation_progress(
+        user_id=ctx.user_id, file_meta=file_meta
+    )
+
+    return StreamingResponse(
+        content=stream,
+        media_type="text/plain",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 
 @router.get("/files/{file_id}/status", tags=["Files"], response_model=FileStatus)

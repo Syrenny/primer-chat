@@ -1,14 +1,19 @@
+import asyncio
 from typing import AsyncIterator, Sequence
 from uuid import UUID, uuid4
 
 from fastapi import UploadFile
 from loguru import logger
+from shared_adapters.redis import RedisIndexationProgressBuffer
 from shared_adapters.s3 import S3Storage
-from shared_models.indexation.interface import IndexationWorkerRequest
+from shared_models.indexation.interface import (
+    IndexationProgressError,
+    IndexationProgressResponse,
+    IndexationWorkerRequest,
+)
 from shared_models.worker.context import WorkerRequestContext
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.config import config
-from src.kafka.indexation.producer import IndexationProducer
 from src.db.dao import DaoFileMeta
 from src.db.models import DBFileMeta
 from src.exceptions.files import (
@@ -17,7 +22,12 @@ from src.exceptions.files import (
     FilesValidationError,
     MissingFileIdsError,
 )
-from src.models.dto.files import FileMeta
+from src.kafka.indexation.producer import IndexationProducer
+from src.models.dto.files import (
+    ApiIndexationProgressError,
+    ApiIndexationProgressResponse,
+    FileMeta,
+)
 
 
 class UploadFileReader:
@@ -154,6 +164,43 @@ class FileService:
             raise MissingFileIdsError(ids={file_id})
 
         return FileMeta.from_orm(db_file_meta)
+
+    @classmethod
+    async def listen_indexation_progress(
+        cls, user_id: UUID, file_meta: FileMeta
+    ) -> AsyncIterator[str]:
+        progress_stream = RedisIndexationProgressBuffer.listen(
+            user_id=user_id, file_id=file_meta.file_id
+        )
+        try:
+            async for progress_chunk in progress_stream:
+                match progress_chunk:
+                    case IndexationProgressResponse():
+                        yield (
+                            ApiIndexationProgressResponse(
+                                file_id=progress_chunk.context.file_id,
+                                filename=file_meta.filename,
+                                progress=progress_chunk.progress,
+                            ).model_dump_json()
+                            + "\n\n"
+                        )
+                        if progress_chunk.progress >= 1:
+                            break
+                    case IndexationProgressError():
+                        error_response = ApiIndexationProgressError()
+                        yield error_response.model_dump_json() + "\n\n"
+                        break
+
+        except asyncio.CancelledError:
+            logger.info(
+                f"🚫 Client disconnected (user={file_meta.user_id}, file={file_meta.file_id})"
+            )
+        except Exception as err:
+            logger.exception(
+                f"💥 Unhandled exception in indexation progress stream: {err}"
+            )
+            error_response = ApiIndexationProgressError()
+            yield error_response.model_dump_json() + "\n\n"
 
     @classmethod
     async def add_file(

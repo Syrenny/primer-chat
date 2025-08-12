@@ -86,13 +86,26 @@ class RedisConnectionConfig(BaseModel):
     db: int
 
 
-class RedisBufferConfig(BaseModel):
+class RedisGenerationBufferConfig(BaseModel):
     ttl_seconds: int
+
+
+class RedisGenerationRequestBufferConfig(BaseModel):
+    ttl_seconds: int
+
+
+class RedisIndexationProgressConfig(BaseModel):
+    maxlen: int
+    ttl_seconds: int
+    xread_block_ms: int
+    xread_batch: int
 
 
 class RedisConfig(BaseModel):
     connection: RedisConnectionConfig
-    buffer: RedisBufferConfig
+    generation_buffer: RedisGenerationBufferConfig
+    generation_request_buffer: RedisGenerationRequestBufferConfig
+    indexation_progress_buffer: RedisIndexationProgressConfig
 
 
 class OpenAIConfig(BaseModel):

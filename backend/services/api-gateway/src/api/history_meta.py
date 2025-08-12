@@ -5,7 +5,6 @@ from src.db.dao.history_meta import DaoHistoryMeta
 from src.models.dto.history import (
     CreateHistoryMetaRequest,
     HistoryMeta,
-    HistoryMetaSummary,
     UpdateHistoryMetaRequest,
 )
 from src.services.files import FileService
@@ -95,12 +94,16 @@ async def update_history_meta(
         user_id=ctx.user_id, session=ctx.session, file_ids=body.file_ids
     )
 
-    result = await DaoHistoryMeta.update_history_meta(
+    await DaoHistoryMeta.update_history_meta(
         session=ctx.session,
         user_id=ctx.user_id,
         history_id=history_id,
-        summary=HistoryMetaSummary(),
+        summary=None,
         files=db_files,
     )
 
-    return HistoryMeta.from_orm(result)
+    db_history_meta = await DaoHistoryMeta.get_history_meta(
+        session=ctx.session, user_id=ctx.user_id, history_id=history_id
+    )
+
+    return HistoryMeta.from_orm(db_history_meta)

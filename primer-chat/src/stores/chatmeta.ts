@@ -75,7 +75,9 @@ export const chatMetaStore = createStore<ChatMetaStoreState>((set, get) => ({
 	updateChat: async (historyId, fileIds) => {
 		set({ loading: true, error: null })
 		try {
+            console.log("Request:", fileIds)
 			const updated = await apiChatUpdate(historyId, fileIds)
+            console.log("Updated:", updated)
 			const updatedChats = get().chats.map(chat =>
 				chat.history_id === historyId ? updated : chat
 			)

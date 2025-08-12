@@ -111,10 +111,10 @@ class DaoHistoryMeta:
         if summary is not None:
             db_history_meta.summary = summary.model_dump()
 
-        if files:
+        if files is not None:
             db_history_meta.files = files
 
-        if requests:
+        if requests is not None:
             db_history_meta.requests = requests
 
         return db_history_meta

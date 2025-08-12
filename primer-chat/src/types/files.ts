@@ -12,3 +12,17 @@ export interface ApiFileStatusResponse {
 export interface ApiFileLinkResponse {
 	url: string
 }
+
+export const ProgressStatus = {
+	Response: 'response',
+	Error: 'error',
+} as const
+
+export type ApiFileUploadProgress =
+	| {
+			type: typeof ProgressStatus.Response
+			file_id: string
+			filename: string
+			progress: number
+	  }
+	| { type: typeof ProgressStatus.Error }

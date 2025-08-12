@@ -12,12 +12,16 @@ import { Plus } from 'lucide-react'
 import { useStore } from 'zustand'
 import { useChatNavigation } from '../hooks/useChatNavigation'
 import ChatFileItem from './ChatFileItem'
-import AddFilesToChatModal from './modal/AddFilesToChatModal'
 
 interface ChatItemProps {
 	chat: ApiChatMetaResponse
 	onSelect: () => void
 }
+
+function getMockChatTitle(chat: ApiChatMetaResponse) {
+	return `Чат ${chat.history_id.slice(0, 4)}`
+}
+
 
 export default function ChatItem({ chat, onSelect }: ChatItemProps) {
 	// ChatMeta store
@@ -40,12 +44,14 @@ export default function ChatItem({ chat, onSelect }: ChatItemProps) {
 	}
 
 	const handleAddFile = async () => {
-		openAddFilesModal()
+		openAddFilesModal(chat.history_id)
 	}
 
 	return (
-		<AccordionItem value={chat.history_id} className='h-full w-full border-none'>
-			<AddFilesToChatModal historyId={chat.history_id} />
+		<AccordionItem
+			value={chat.history_id}
+			className='h-full w-full border-none'
+		>
 			<div
 				className={cn(
 					'flex items-center justify-between w-full max-w-full border-l-4 h-12',
@@ -60,8 +66,7 @@ export default function ChatItem({ chat, onSelect }: ChatItemProps) {
 					onClick={onSelect}
 				>
 					<span className='flex-1 contain-inline-size text-ellipsis truncate text-left'>
-						{chat.files.map(f => f.filename).join(', ') ||
-							'Новый чат'}
+						{getMockChatTitle(chat)}
 					</span>
 				</Button>
 				<AccordionTrigger

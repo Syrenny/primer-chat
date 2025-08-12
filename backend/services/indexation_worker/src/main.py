@@ -11,7 +11,7 @@ from shared_models.indexation.interface import (
     IndexationWorkerRequest,
     IndexationWorkerResponse,
 )
-from src.services.indexation import IndexationService
+from src.services.indexation import IndexationService, ProgressService
 
 
 @lru_cache
@@ -40,13 +40,13 @@ class WorkerIndexationRequestConsumer(BaseKafkaConsumer):
             logger.error(f"[indexation worker] ❌ Validation error: {err}")
             return
 
-        worker_response = IndexationWorkerResponse(context=request.context)
-
         try:
+            worker_response = IndexationWorkerResponse(context=request.context)
+
             pdf_bytes = await S3Storage.get_pdf_bytes_from_url(request.s3_link)
 
             service = get_indexation_service()
-            result = await service.run(pdf_bytes)
+            result = await service.run(pdf_bytes=pdf_bytes, ctx=request.context)
 
             await S3Storage.upload_chunks(
                 user_id=request.context.user_id,
@@ -54,11 +54,13 @@ class WorkerIndexationRequestConsumer(BaseKafkaConsumer):
                 result=result,
             )
         except Exception as err:
-            worker_response.error = str(err)
             logger.exception(f"[indexation worker] 🧨 Indexation error: {err}")
+            worker_response.error = str(err)
+            await ProgressService.send_error(ctx=request.context)
 
-        async with WorkerIndexationResultProducer() as producer:
-            await producer.send(worker_response)
+        finally:
+            async with WorkerIndexationResultProducer() as producer:
+                await producer.send(worker_response)
 
 
 async def main():

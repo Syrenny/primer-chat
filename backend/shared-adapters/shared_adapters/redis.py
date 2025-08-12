@@ -4,6 +4,10 @@ from uuid import UUID
 import redis.asyncio as redis
 from shared_config import config
 from shared_models.generation.interface import GenerationWorkerRequest
+from shared_models.indexation.interface import (
+    IndexationProgress,
+    IndexationProgressAdapter,
+)
 
 
 # TODO make _key_template = "{key_prefix}:{user_id}:{history}"
@@ -44,7 +48,7 @@ class RedisGenerationBuffer:
                 "history_id": str(history_id),
             },
         )
-        await client.expire(meta_key, config.redis.buffer.ttl_seconds)
+        await client.expire(meta_key, config.redis.generation_buffer.ttl_seconds)
 
     @classmethod
     async def load_chunks(cls, user_id: UUID) -> list[str]:
@@ -58,7 +62,7 @@ class RedisGenerationBuffer:
         channel = f"generation:{user_id}"
 
         await client.rpush(chunk_key, chunk)
-        await client.expire(chunk_key, config.redis.buffer.ttl_seconds)
+        await client.expire(chunk_key, config.redis.generation_buffer.ttl_seconds)
         await client.publish(channel, chunk)
 
     @classmethod
@@ -135,7 +139,9 @@ class RedisGenerationRequestStore:
 
         # serialize via Pydantic
         serialized = request.model_dump_json()
-        await client.set(key, serialized, ex=config.redis.buffer.ttl_seconds)
+        await client.set(
+            key, serialized, ex=config.redis.generation_request_buffer.ttl_seconds
+        )
 
     @classmethod
     async def get(
@@ -159,3 +165,83 @@ class RedisGenerationRequestStore:
     async def exists(cls, user_id: UUID, request_id: UUID) -> bool:
         client = await cls.get_client()
         return await client.exists(cls._key(user_id, request_id)) == 1
+
+
+class RedisIndexationProgressBuffer:
+    _client: redis.Redis | None = None
+    _stream_template = "indexation_progress_stream:{user_id}:{file_id}"
+
+    @classmethod
+    async def get_client(cls) -> redis.Redis:
+        if cls._client is None:
+            cls._client = redis.Redis(
+                host=config.redis.connection.host,
+                port=config.redis.connection.port,
+                db=config.redis.connection.db,
+                decode_responses=True,
+            )
+            await cls._client.ping()
+        return cls._client
+
+    @classmethod
+    def _stream(cls, user_id: UUID, file_id: UUID) -> str:
+        return cls._stream_template.format(user_id=user_id, file_id=file_id)
+
+    @classmethod
+    async def clear_all(cls, user_id: UUID, file_id: UUID) -> None:
+        client = await cls.get_client()
+        await client.delete(cls._stream(user_id=user_id, file_id=file_id))
+
+    @classmethod
+    async def exists(cls, user_id: UUID, file_id: UUID) -> bool:
+        client = await cls.get_client()
+        return await client.exists(cls._stream(user_id=user_id, file_id=file_id)) == 1
+
+    @classmethod
+    async def commit_progress(
+        cls,
+        user_id: UUID,
+        file_id: UUID,
+        progress: IndexationProgress,
+    ) -> None:
+        client = await cls.get_client()
+        stream = cls._stream(user_id=user_id, file_id=file_id)
+
+        payload = {"data": progress.model_dump_json()}
+
+        pipe = client.pipeline()
+
+        pipe.xadd(
+            stream,
+            fields=payload,
+            maxlen=config.redis.indexation_progress_buffer.maxlen,
+            approximate=True,
+        )
+        pipe.expire(stream, config.redis.indexation_progress_buffer.ttl_seconds)
+        await pipe.execute()
+
+    @classmethod
+    async def listen(
+        cls,
+        user_id: UUID,
+        file_id: UUID,
+    ) -> AsyncIterator[IndexationProgress]:
+        client = await cls.get_client()
+        stream = cls._stream(user_id=user_id, file_id=file_id)
+        last_id = "$"
+
+        while True:
+            res = await client.xread(
+                streams={stream: last_id},
+                block=config.redis.indexation_progress_buffer.xread_block_ms,
+                count=config.redis.indexation_progress_buffer.xread_batch,
+            )
+            if not res:
+                continue
+
+            _, messages = res[0]
+            for msg_id, fields in messages:
+                raw = fields.get("data")
+                if raw is not None:
+                    yield IndexationProgressAdapter.validate_json(raw)
+                last_id = msg_id

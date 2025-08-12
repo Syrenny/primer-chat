@@ -27,4 +27,4 @@ dependencies = [
 ]
 
 [tool.uv.sources]
-shared-adapters = { path = "../../shared-adapters" }
+shared-adapters = { path = "../../shared-adapters", editable = true }

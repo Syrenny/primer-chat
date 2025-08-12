@@ -23,5 +23,5 @@ build-backend = "setuptools.build_meta"
 packages = ["shared_adapters"]
 
 [tool.uv.sources]
-shared-config = { path = "../shared-config" }
-shared-models = { path = "../shared-models" }
+shared-config = { path = "../shared-config", editable = true }
+shared-models = { path = "../shared-models", editable = true }

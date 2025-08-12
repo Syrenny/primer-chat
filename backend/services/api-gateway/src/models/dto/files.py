@@ -1,7 +1,8 @@
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, TypeAdapter
 from src.db.models import DBFileMeta
+from typing import Annotated, Union, Literal
 
 
 class FileMeta(BaseModel):
@@ -31,3 +32,27 @@ class FileStatus(BaseModel):
 
 class SignedUrl(BaseModel):
     url: str
+
+
+class ApiIndexationProgressError(BaseModel):
+    model_config = ConfigDict(strict=True)
+
+    type: Literal["error"] = "error"
+
+
+class ApiIndexationProgressResponse(BaseModel):
+    model_config = ConfigDict(strict=True)
+
+    type: Literal["response"] = "response"
+
+    file_id: UUID
+    filename: str
+    progress: float  # [0:1]
+
+
+ApiIndexationProgress = Annotated[
+    Union[ApiIndexationProgressError, ApiIndexationProgressResponse],
+    Field(discriminator="type"),
+]
+
+ApiIndexationProgressAdapter = TypeAdapter(ApiIndexationProgress)

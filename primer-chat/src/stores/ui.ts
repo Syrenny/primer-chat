@@ -6,6 +6,7 @@ interface UIState {
 	isFilesModalOpen: boolean
 	isAddFilesModalOpen: boolean
 	openedChatIds: string[]
+    addFilesModalChatId: string | null
 
 	setOpenedChatIds: (ids: string[]) => void
 	openSidebar: () => void
@@ -16,7 +17,8 @@ interface UIState {
 	closeFilesModal: () => void
 	toggleFilesModal: () => void
 
-	openAddFilesModal: () => void
+
+	openAddFilesModal: (historyId: string) => void
 	closeAddFilesModal: () => void
 }
 
@@ -27,6 +29,7 @@ export const uiStore = createStore(
 			isFilesModalOpen: false,
 			isAddFilesModalOpen: false,
 			openedChatIds: [],
+			addFilesModalChatId: null,
 
 			setOpenedChatIds: ids => set({ openedChatIds: ids }),
 
@@ -42,8 +45,9 @@ export const uiStore = createStore(
 					isFilesModalOpen: !state.isFilesModalOpen,
 				})),
 
-			openAddFilesModal: () => set({ isAddFilesModalOpen: true }),
-			closeAddFilesModal: () => set({ isAddFilesModalOpen: false }),
+			openAddFilesModal: historyId =>
+				set({ addFilesModalChatId: historyId }),
+			closeAddFilesModal: () => set({ addFilesModalChatId: null }),
 		}),
 		{
 			name: 'ui-storage',

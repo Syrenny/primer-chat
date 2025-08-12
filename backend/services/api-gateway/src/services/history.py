@@ -101,7 +101,7 @@ class HistoryMetaService:
         cls,
         user_id: UUID,
         session: AsyncSession,
-        db_files: list[DBFileMeta] = [],
+        db_files: list[DBFileMeta] | None = None,
     ) -> HistoryMeta:
         summary = HistoryMetaSummary()
         _db_history_meta = await DaoHistoryMeta.add_history_meta(
@@ -118,8 +118,8 @@ class HistoryMetaService:
         user_id: UUID,
         history_id: UUID,
         session: AsyncSession,
-        summary: HistoryMetaSummary,
-        db_files: list[DBFileMeta] = [],
+        summary: HistoryMetaSummary | None = None,
+        db_files: list[DBFileMeta] | None = None,
     ) -> HistoryMeta | None:
         _db_history_meta = await DaoHistoryMeta.update_history_meta(
             session=session,
