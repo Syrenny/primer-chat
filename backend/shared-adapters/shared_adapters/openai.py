@@ -58,8 +58,8 @@ class OpenAICompletionsGenerator:
                 model=config.openai.model,
                 messages=[system_prompt] + history + [query],
                 stream=True,
-                temperature=config.openai.temperature,
-                max_tokens=config.openai.max_tokens,
+                # temperature=config.openai.temperature,
+                # max_tokens=config.openai.max_tokens,
             )
 
             async for chunk in generator:
@@ -95,8 +95,8 @@ class OpenAIFullCompletions:
                 model=config.openai.model,
                 messages=[system_prompt] + (history or []) + ([query] if query else []),
                 stream=False,
-                temperature=config.openai.temperature,
-                max_tokens=config.openai.max_tokens,
+                # temperature=config.openai.temperature,
+                # max_tokens=config.openai.max_tokens,
             )
 
         return response.choices[0].message.content, response.usage

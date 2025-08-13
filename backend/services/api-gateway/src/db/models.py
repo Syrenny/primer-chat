@@ -1,5 +1,6 @@
 import uuid
 from datetime import UTC, datetime
+from typing import Literal
 
 import sqlalchemy as db
 from pgvector.sqlalchemy import Vector
@@ -158,6 +159,9 @@ class DBGenerationRequest(Base):
     )
 
 
+ChunkLevel = Literal["leaves", "sections", "document"]
+
+
 class DBChunk(Base):
     __tablename__ = "chunks"
 
@@ -166,10 +170,30 @@ class DBChunk(Base):
     )
     content: Mapped[str] = mapped_column(db.Text, nullable=False)
     embedding: Mapped[list[float]] = mapped_column(Vector(config.embeddings.dimensions))
-    html_tag: Mapped[str] = mapped_column(db.String, nullable=False)
+
     positions: Mapped[list[dict]] = mapped_column(
         JSONB, nullable=False, comment="List[PdfLinePosition]"
     )
+
+    level: Mapped[ChunkLevel] = mapped_column(
+        db.Enum("leaves", "sections", "document", name="chunk_level"),
+        nullable=False,
+        default="leaves",
+    )
+    title: Mapped[str | None] = mapped_column(db.Text, nullable=True)
+    local_summary: Mapped[str | None] = mapped_column(db.Text, nullable=True)
+    keyphrases: Mapped[list[str]] = mapped_column(
+        JSONB, nullable=False, default=list, comment="list[str]"
+    )
+
+    html_tag: Mapped[str] = mapped_column(db.String, nullable=True)
+
+    # Диапазоны для навигации/аналитики
+    start_line: Mapped[int | None] = mapped_column(db.Integer, nullable=True)
+    end_line: Mapped[int | None] = mapped_column(db.Integer, nullable=True)
+    page_start: Mapped[int | None] = mapped_column(db.Integer, nullable=True)
+    page_end: Mapped[int | None] = mapped_column(db.Integer, nullable=True)
+
     created_at: Mapped[datetime] = mapped_column(
         db.DateTime(timezone=True), default=utcnow
     )

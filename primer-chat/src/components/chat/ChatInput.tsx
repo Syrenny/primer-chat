@@ -99,7 +99,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSubmit, maxRows = 6 }) => {
 		<div
 			ref={containerRef}
 			className={clsx(
-				'flex flex-row py-2 px-3 items-center w-full rounded-2xl border bg-muted/50 text-foreground shadow-sm',
+				'flex flex-row py-2 px-3 items-center w-full rounded-2xl border bg-muted text-foreground shadow-sm',
 				'focus-within:ring-0.5 focus-within:ring-primary/40 focus-within:border-primary/50'
 			)}
 		>

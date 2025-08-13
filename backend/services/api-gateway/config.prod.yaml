@@ -19,4 +19,4 @@ generation:
     max_len_history: 10
 
 retriever:
-    max_chunks_per_file: 3
+    limit: 10

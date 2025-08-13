@@ -110,6 +110,7 @@ export default function FilesModal() {
 							<AlertTitle>Ошибка</AlertTitle>
 							<AlertDescription className='text-sm'>
 								{error}
+                                Пожалуйста, попробуйте снова
 							</AlertDescription>
 						</Alert>
 					)}

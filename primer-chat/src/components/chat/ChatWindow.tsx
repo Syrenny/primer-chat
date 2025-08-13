@@ -27,10 +27,10 @@ export default function ChatWindow() {
 	}
 
 	return (
-		<div className='relative flex flex-col flex-1 items-center justify-between w-full h-full pb-30 px-4'>
+		<div className='relative flex flex-col flex-1 items-center justify-between w-full h-full pb-15 px-4'>
 			<ChatContent historyId={historyId} />
 
-			<div className='absolute bottom-6 w-full  bg-transparent max-w-[48rem] px-5'>
+			<div className='absolute bottom-6 w-full  max-w-[48rem] px-5'>
 				<ChatInput onSubmit={handleSendMessage} />
 			</div>
 		</div>

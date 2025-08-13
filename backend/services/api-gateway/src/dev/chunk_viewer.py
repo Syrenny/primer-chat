@@ -21,7 +21,7 @@ class ApiClient:
         # Кука вида JSON: {"cookie_id": "<uuid>"}
         cookies = {
             "primer-chat-cookie": json.dumps(
-                {"cookie_id": "03e3df61-722f-4f13-b018-404065f3a8d7"},
+                {"cookie_id": "b27f6f27-9374-448d-83b9-bac0691823d0"},
                 separators=(",", ":"),
             )
         }

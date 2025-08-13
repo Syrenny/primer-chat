@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from shared_models.indexation.core import HTMLTag, PdfLinePosition
+from shared_models.indexation.core import PdfLinePosition
 
 
 class StyleKey(BaseModel):
@@ -22,7 +22,10 @@ class SegmentationRequest(BaseModel):
 class ResultChunk(BaseModel):
     start_line: int
     end_line: int
-    html_tag: HTMLTag
+
+    title: str  # синтетическое короткое название чанка
+    keyphrases: list[str]  # ключевые фразы (лемматизируй где возможно)
+    local_summary: str  # краткое саммари чанка (2–4 предложения)
 
 
 class SegmentationResult(BaseModel):

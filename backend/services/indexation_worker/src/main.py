@@ -12,6 +12,7 @@ from shared_models.indexation.interface import (
     IndexationWorkerResponse,
 )
 from src.services.indexation import IndexationService, ProgressService
+from asyncio import TimeoutError as AsyncTimeoutError
 
 
 @lru_cache
@@ -39,11 +40,21 @@ class WorkerIndexationRequestConsumer(BaseKafkaConsumer):
         except ValidationError as err:
             logger.error(f"[indexation worker] ❌ Validation error: {err}")
             return
-
         try:
             worker_response = IndexationWorkerResponse(context=request.context)
 
-            pdf_bytes = await S3Storage.get_pdf_bytes_from_url(request.s3_link)
+            # S3: timeout + 2 ретрая
+            async def _dl():
+                return await S3Storage.get_pdf_bytes_from_url(request.s3_link)
+
+            for attempt in range(3):
+                try:
+                    pdf_bytes = await asyncio.wait_for(_dl(), timeout=30)
+                    break
+                except (AsyncTimeoutError, Exception) as e:
+                    if attempt == 2:
+                        raise
+                    logger.warning(f"[indexation] S3 retry {attempt + 1}/2: {e}")
 
             service = get_indexation_service()
             result = await service.run(pdf_bytes=pdf_bytes, ctx=request.context)

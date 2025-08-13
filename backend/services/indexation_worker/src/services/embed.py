@@ -17,7 +17,9 @@ class BatchEmbedder:
 
     def append(self, content: str) -> None:
         text = (content or "").strip()
-
+        # safety-guard: отрезать слишком длинные куски (символьный суррогат)
+        if len(text) > local_config.embeddings_max_char:
+            text = text[: local_config.embeddings_max_char]
         if text:
             self._buffered_texts.append(text)
         else:
@@ -58,7 +60,9 @@ class BatchEmbedder:
             self._validate_embeddings(response)
             result.extend(response.embeddings)
             self.embeddings_usage += response.usage
-
+        logger.debug(
+            f"[embed] batches={len(batches)} size={local_config.embeddings_batch_size}"
+        )
         return result
 
     def flush(self) -> None:

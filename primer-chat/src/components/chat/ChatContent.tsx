@@ -1,5 +1,4 @@
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Skeleton } from '@/components/ui/skeleton'
 import { generationStore } from '@/stores/generation'
 import { historyStore } from '@/stores/history'
 import { AlertTriangle } from 'lucide-react'
@@ -10,22 +9,22 @@ import AssistantMessage from './AssistantMessage'
 import { ChatIntroduction } from './ChatIntroduction'
 import UserMessage from './UserMessage'
 
+import GeneratingMessage from './GeneratingMessage'
+
 interface ChatContentProps {
 	historyId: string | undefined
 }
 
 const ChatContent = ({ historyId }: ChatContentProps) => {
-	const requests = useStore(historyStore, state => state.requests)
-	const isHistoryLoading = useStore(
-		historyStore,
-		state => state.isHistoryLoading
-	)
-	const loadHistory = useStore(historyStore, state => state.loadHistory)
+	const requests = useStore(historyStore, s => s.requests)
+	const isHistoryLoading = useStore(historyStore, s => s.isHistoryLoading)
+	const loadHistory = useStore(historyStore, s => s.loadHistory)
 
 	const isWaitingForGeneration = useStore(
 		generationStore,
-		state => state.isWaitingForGeneration
+		s => s.isWaitingForGeneration
 	)
+	const isGenerating = useStore(generationStore, s => s.isGenerating)
 	const chatEndRef = useRef<HTMLDivElement | null>(null)
 
 	const [error, setError] = useState<string | null>(null)
@@ -33,6 +32,13 @@ const ChatContent = ({ historyId }: ChatContentProps) => {
 	useLayoutEffect(() => {
 		chatEndRef.current?.scrollIntoView({ behavior: 'auto' })
 	}, [requests])
+
+	// Автоскролл при смене статуса генерации
+	useEffect(() => {
+		if (isWaitingForGeneration || isGenerating) {
+			chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+		}
+	}, [isWaitingForGeneration, isGenerating])
 
 	useEffect(() => {
 		if (!historyId) {
@@ -53,7 +59,7 @@ const ChatContent = ({ historyId }: ChatContentProps) => {
 
 	if (error) {
 		return (
-			<div className='p-4 w-full'>
+			<div className='w-full p-4'>
 				<Alert variant='default'>
 					<AlertTriangle className='h-4 w-4' />
 					<AlertDescription>{error}</AlertDescription>
@@ -66,33 +72,41 @@ const ChatContent = ({ historyId }: ChatContentProps) => {
 		return <ChatIntroduction />
 	}
 
-	return (
-		<ScrollArea className='overflow-y-auto w-full flex-1 h-full flex'>
-			<div className='h-full w-full flex flex-col justify-center items-center'>
-				<div className='w-full max-w-3xl h-full '>
-					<div className='flex flex-col w-full pt-6 pb-24 space-y-8 px-3'>
-						{requests.map(req => {
-							return (
-								<div key={req.requestId} className='flex flex-col gap-y-4'>
-									<UserMessage
-										key={`user_${req.requestId}`}
-										request={req}
-									/>
-									<AssistantMessage
-										key={`assistant_${req.requestId}`}
-										request={req}
-									/>
-								</div>
-							)
-						})}
+	const showGenerating = isWaitingForGeneration || isGenerating
+	const phase: 'pre' | 'stream' = isWaitingForGeneration ? 'pre' : 'stream'
 
-						{isWaitingForGeneration && (
-							<Skeleton className='h-5 w-10 mt-2' />
-						)}
+	return (
+		<ScrollArea
+			className='flex h-full w-full flex-1 overflow-y-auto'
+			aria-busy={showGenerating ? true : undefined}
+		>
+			<div className='flex h-full w-full flex-col items-center justify-center'>
+				<div className='h-full w-full max-w-3xl'>
+					<div className='flex w-full flex-col space-y-8 px-3 pt-6 pb-24'>
+						{requests.map(req => (
+							<div
+								key={req.requestId}
+								className='flex flex-col gap-y-4'
+							>
+								<UserMessage
+									key={`user_${req.requestId}`}
+									request={req}
+								/>
+								<AssistantMessage
+									key={`assistant_${req.requestId}`}
+									request={req}
+								/>
+							</div>
+						))}
+
+						{/* 👇 вместо маленького Skeleton — полноценный «ассистент печатает» */}
+						{showGenerating && <GeneratingMessage phase={phase} />}
+
+						<div ref={chatEndRef} />
 					</div>
 				</div>
 			</div>
-			<div ref={chatEndRef} />
+
 			<ScrollBar orientation='vertical' />
 		</ScrollArea>
 	)

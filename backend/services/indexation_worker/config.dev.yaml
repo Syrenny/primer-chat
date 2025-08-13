@@ -1,3 +1,29 @@
-pages_batch_size: 3
-embeddings_batch_size: 10
-max_concurrent_segments: 3
+pages_batch_size: 4
+embeddings_batch_size: 64
+
+max_concurrent_segments: 6
+max_concurrent_summaries: 4
+
+# RAPTOR-параметры
+window_pages: 6
+overlap_pages: 2
+
+section_summary_max_tokens: 180
+document_summary_max_tokens: 400
+
+section_source_max_chars: 12000
+document_source_max_chars: 12000
+
+embed_mode: 'hybrid'
+embed_hybrid_prefix_chars: 800
+embeddings_max_char: 8000
+
+segmentation_prompt_config:
+    min_lines_per_chunk: 2
+    min_chars_per_chunk: 180
+    target_chars_per_chunk: 800
+    max_chars_per_chunk: 1200
+    max_title_words: 6
+    max_keyphrases: 5
+    max_summary_sentences: 3
+    max_title_chars: 80

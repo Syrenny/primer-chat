@@ -8,8 +8,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.config import config as local_config
 from src.db.dao import DaoChunks
 from src.db.models import DBChunk
-from src.services.request import RequestService
 from src.services.chunks import ChunkService
+from src.services.request import RequestService
 
 
 @lru_cache
@@ -25,7 +25,6 @@ class RetrieveService:
         history_id: UUID,
         session: AsyncSession,
         query: str,
-        limit: int,
     ) -> list[DBChunk]:
         embeddings_client = get_embeddings()
 
@@ -36,7 +35,7 @@ class RetrieveService:
             user_id=user_id,
             history_id=history_id,
             query_embedding=embeddings_response.data[0].embedding,
-            limit=limit,
+            limit=local_config.retriever.limit,
         )
 
     @classmethod
@@ -53,7 +52,6 @@ class RetrieveService:
             user_id=user_id,
             session=session,
             query=query,
-            limit=local_config.retriever.max_chunks_per_file,
         )
 
         await RequestService.update_request(

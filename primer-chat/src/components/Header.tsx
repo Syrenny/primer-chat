@@ -21,6 +21,9 @@ const Header = () => {
 						Developed for JMLC (AI Talent Hub)
 					</span>
 				</div>
+				<span className='ml-8 text-muted-foreground truncate italic'>
+					Внимание: для корректной работы приложения может понадобиться очистка куки сайта
+				</span>
 			</div>
 			<ThemeToggle />
 		</header>

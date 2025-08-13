@@ -1,8 +1,8 @@
 """ivfflat
 
-Revision ID: 98c269253a4a
-Revises: 018b762339af
-Create Date: 2025-08-11 05:23:15.672966
+Revision ID: 44cb5bdb4ac6
+Revises: 3ca93d6631fa
+Create Date: 2025-08-13 13:45:56.375509
 
 """
 
@@ -12,8 +12,8 @@ from alembic import op
 from shared_config import config
 
 # revision identifiers, used by Alembic.
-revision: str = "98c269253a4a"
-down_revision: Union[str, Sequence[str], None] = "018b762339af"
+revision: str = "44cb5bdb4ac6"
+down_revision: Union[str, Sequence[str], None] = "3ca93d6631fa"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

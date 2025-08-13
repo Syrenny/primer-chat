@@ -1,3 +1,4 @@
+import type { PdfLinePosition } from '@/types/chunks'
 import { createStore } from 'zustand'
 import { persist } from 'zustand/middleware'
 
@@ -6,7 +7,8 @@ interface UIState {
 	isFilesModalOpen: boolean
 	isAddFilesModalOpen: boolean
 	openedChatIds: string[]
-    addFilesModalChatId: string | null
+	addFilesModalChatId: string | null
+	pdfLinePositions: PdfLinePosition[]
 
 	setOpenedChatIds: (ids: string[]) => void
 	openSidebar: () => void
@@ -17,9 +19,10 @@ interface UIState {
 	closeFilesModal: () => void
 	toggleFilesModal: () => void
 
-
 	openAddFilesModal: (historyId: string) => void
 	closeAddFilesModal: () => void
+
+	setPdfLinePositions: (positions: PdfLinePosition[]) => void
 }
 
 export const uiStore = createStore(
@@ -30,6 +33,7 @@ export const uiStore = createStore(
 			isAddFilesModalOpen: false,
 			openedChatIds: [],
 			addFilesModalChatId: null,
+            pdfLinePositions: [],
 
 			setOpenedChatIds: ids => set({ openedChatIds: ids }),
 
@@ -48,6 +52,8 @@ export const uiStore = createStore(
 			openAddFilesModal: historyId =>
 				set({ addFilesModalChatId: historyId }),
 			closeAddFilesModal: () => set({ addFilesModalChatId: null }),
+
+            setPdfLinePositions: (positions) => set({pdfLinePositions: positions}),
 		}),
 		{
 			name: 'ui-storage',

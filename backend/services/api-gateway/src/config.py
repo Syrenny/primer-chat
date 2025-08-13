@@ -18,7 +18,7 @@ class GenerationConfig(BaseModel):
 
 
 class RetrieverConfig(BaseModel):
-    max_chunks_per_file: int
+    limit: int
 
 
 class Config(BaseModel):
