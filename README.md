@@ -6,21 +6,21 @@
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-Open-1f883d)](http://109.120.142.57)
 [![License: MIT](https://img.shields.io/badge/License-MIT-black.svg)](LICENSE)
 
--   [Primer Chat 📚](#primer-chat-)
-    -   [Overview](#overview)
-    -   [Demo](#demo)
-    -   [Key Features](#key-features)
-    -   [Quick Start](#quick-start)
-    -   [How It Works](#how-it-works)
-        -   [RAPTOR-like Indexing](#raptor-like-indexing)
-            -   [Indexing Request](#indexing-request)
-            -   [Indexing Response](#indexing-response)
-        -   [Question Answering](#question-answering)
-    -   [Tech Stack](#tech-stack)
-    -   [Configuration \& Environments](#configuration--environments)
-    -   [References \& Attribution](#references--attribution)
-    -   [Contributing](#contributing)
-    -   [License](#license)
+- [Primer Chat 📚](#primer-chat-)
+  - [Overview](#overview)
+  - [Demo](#demo)
+  - [Key Features](#key-features)
+  - [Quick Start](#quick-start)
+  - [How It Works](#how-it-works)
+    - [RAPTOR-like Indexing](#raptor-like-indexing)
+      - [Indexing Request](#indexing-request)
+      - [Indexing Response](#indexing-response)
+    - [Question Answering](#question-answering)
+  - [Tech Stack](#tech-stack)
+  - [Configuration \& Environments](#configuration--environments)
+  - [References \& Attribution](#references--attribution)
+  - [Contributing](#contributing)
+  - [License](#license)
 
 ---
 
@@ -118,13 +118,13 @@ Upload documents, watch **real-time indexing**, and ask questions with **line-le
 #### Indexing Request
 
 <p align="left">
-    <img src="./docs/assets/indexation-request.png" width="400">
+    <img src="./docs/assets/indexation-request.png" width="500">
 </p>
 
 #### Indexing Response
 
 <p align="left">
-    <img src="./docs/assets/indexation-response.png" width="400">
+    <img src="./docs/assets/indexation-response.png" width="500">
 </p>
 
 ### Question Answering
@@ -135,7 +135,7 @@ Upload documents, watch **real-time indexing**, and ask questions with **line-le
 4. **Render**: viewer highlights fragments; chat streams token-by-token.
 
 <p align="left">
-    <img src="./docs/assets/generation.png" width="400">
+    <img src="./docs/assets/generation.png" width="500">
 </p>
 
 ## Tech Stack
