@@ -6,30 +6,31 @@
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-Open-1f883d)](http://109.120.142.57)
 [![License: MIT](https://img.shields.io/badge/License-MIT-black.svg)](LICENSE)
 
-- [Primer Chat 📚](#primer-chat-)
-  - [Overview](#overview)
-  - [Demo](#demo)
-  - [Key Features](#key-features)
-  - [Quick Start](#quick-start)
-  - [How It Works](#how-it-works)
-    - [RAPTOR-like Indexing](#raptor-like-indexing)
-    - [Question Answering](#question-answering)
-  - [Tech Stack](#tech-stack)
-  - [Configuration \& Environments](#configuration--environments)
-  - [References \& Attribution](#references--attribution)
-  - [Contributing](#contributing)
-  - [License](#license)
-
+-   [Primer Chat 📚](#primer-chat-)
+    -   [Overview](#overview)
+    -   [Demo](#demo)
+    -   [Key Features](#key-features)
+    -   [Quick Start](#quick-start)
+    -   [How It Works](#how-it-works)
+        -   [RAPTOR-like Indexing](#raptor-like-indexing)
+            -   [Indexing Request](#indexing-request)
+            -   [Indexing Response](#indexing-response)
+        -   [Question Answering](#question-answering)
+    -   [Tech Stack](#tech-stack)
+    -   [Configuration \& Environments](#configuration--environments)
+    -   [References \& Attribution](#references--attribution)
+    -   [Contributing](#contributing)
+    -   [License](#license)
 
 ---
 
 ## Overview
 
 Primer Chat is a multi-user, production-minded **RAG for PDFs**.
-Upload documents, watch **real-time indexation**, and ask questions with **line-level citations** rendered directly in the PDF viewer.
+Upload documents, watch **real-time indexing**, and ask questions with **line-level citations** rendered directly in the PDF viewer.
 
 -   **Trustworthy** — every answer cites page/line spans.
--   **Real-time** — streaming indexation + token-by-token responses.
+-   **Real-time** — streaming indexing + token-by-token responses.
 -   **Scalable** — **horizontally scaled workers** for indexing/generation; stateless API.
 
 ---
@@ -43,7 +44,7 @@ Upload documents, watch **real-time indexation**, and ask questions with **line-
 
 ## Key Features
 
--   ⚡ **Real-time UX**: SSE streaming for answers and indexation events.
+-   ⚡ **Real-time UX**: SSE streaming for answers and indexing events.
 -   🧭 **Custom PDF viewer**: highlight overlays, next/prev fragment navigation.
 -   🗂️ **Projects/Folders**: attach multiple files to a chat; manage links quickly.
 -   🧠 **RAPTOR-style indexing**: hierarchical chunking (leaf→summary→tree) for long-doc QA.
@@ -114,6 +115,18 @@ Upload documents, watch **real-time indexation**, and ask questions with **line-
 5. **Persist**: chunks + summaries + embeddings → **Postgres/pgvector**; original → **S3**.
 6. **Stream progress**: step events to UI; partial retrieval works before full completion.
 
+#### Indexing Request
+
+<p align="left">
+    <img src="./docs/assets/indexation-request.png" width="400">
+</p>
+
+#### Indexing Response
+
+<p align="left">
+    <img src="./docs/assets/indexation-response.png" width="400">
+</p>
+
 ### Question Answering
 
 1. **Retrieve** coarse→fine via the tree; fetch leaves + parent summaries.
@@ -121,7 +134,9 @@ Upload documents, watch **real-time indexation**, and ask questions with **line-
 3. **Generate** with **GPT-4o**, emitting inline citations (page\:line).
 4. **Render**: viewer highlights fragments; chat streams token-by-token.
 
----
+<p align="left">
+    <img src="./docs/assets/generation.png" width="400">
+</p>
 
 ## Tech Stack
 
