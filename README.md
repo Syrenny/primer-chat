@@ -118,13 +118,13 @@ Upload documents, watch **real-time indexing**, and ask questions with **line-le
 #### Indexing Request
 
 <p align="left">
-    <img src="./docs/assets/indexation-request.png" width="600">
+    <img src="./docs/assets/indexing-request.png" width="600">
 </p>
 
 #### Indexing Response
 
 <p align="left">
-    <img src="./docs/assets/indexation-response.png" width="600">
+    <img src="./docs/assets/indexing-response.png" width="600">
 </p>
 
 ### Question Answering
