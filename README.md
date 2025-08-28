@@ -5,21 +5,19 @@
 
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-Open-1f883d)](http://109.120.142.57)
 
-- [Primer Chat 📚](#primer-chat-)
-  - [Overview](#overview)
-  - [Demo](#demo)
-  - [Key Features](#key-features)
-  - [Quick Start](#quick-start)
-  - [How It Works](#how-it-works)
-    - [RAPTOR-like Indexing](#raptor-like-indexing)
-      - [Indexing Request](#indexing-request)
-      - [Indexing Response](#indexing-response)
-    - [Question Answering](#question-answering)
-  - [Tech Stack](#tech-stack)
-  - [Configuration \& Environments](#configuration--environments)
-  - [References \& Attribution](#references--attribution)
-  - [Contributing](#contributing)
-  - [License](#license)
+-   [Primer Chat 📚](#primer-chat-)
+    -   [Overview](#overview)
+    -   [Demo](#demo)
+    -   [Key Features](#key-features)
+    -   [Quick Start](#quick-start)
+    -   [How It Works](#how-it-works)
+        -   [RAPTOR-like Indexing](#raptor-like-indexing)
+        -   [Question Answering](#question-answering)
+    -   [Tech Stack](#tech-stack)
+    -   [Configuration \& Environments](#configuration--environments)
+    -   [References \& Attribution](#references--attribution)
+    -   [Contributing](#contributing)
+    -   [License](#license)
 
 ---
 
@@ -106,16 +104,8 @@ Upload documents, watch **real-time indexing**, and ask questions with **line-le
 5. **Persist**: chunks + summaries + embeddings → **Postgres/pgvector**; original → **S3**.
 6. **Stream progress**: step events to UI; partial retrieval works before full completion.
 
-#### Indexing Request
-
 <p align="left">
-    <img src="./docs/assets/indexing-request.png" width="600">
-</p>
-
-#### Indexing Response
-
-<p align="left">
-    <img src="./docs/assets/indexing-response.png" width="600">
+    <img src="./docs/assets/indexing.png" width="600">
 </p>
 
 ### Question Answering
