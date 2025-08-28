@@ -17,13 +17,7 @@ const Header = () => {
 					<span className='text-xl font-semibold text-foreground truncate'>
 						Primer Chat
 					</span>
-					<span className='text-xs text-muted-foreground truncate'>
-						Developed for JMLC (AI Talent Hub)
-					</span>
 				</div>
-				<span className='ml-8 text-muted-foreground truncate italic'>
-					Внимание: для корректной работы приложения может понадобиться очистка куки сайта
-				</span>
 			</div>
 			<ThemeToggle />
 		</header>
