@@ -4,23 +4,22 @@
 > Real-time RAG with **RAPTOR-style** hierarchical indexing, scalable workers, and a minimalist PDF viewer that highlights the exact fragments used.
 
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-Open-1f883d)](http://109.120.142.57)
-[![License: MIT](https://img.shields.io/badge/License-MIT-black.svg)](LICENSE)
 
--   [Primer Chat 📚](#primer-chat-)
-    -   [Overview](#overview)
-    -   [Demo](#demo)
-    -   [Key Features](#key-features)
-    -   [Quick Start](#quick-start)
-    -   [How It Works](#how-it-works)
-        -   [RAPTOR-like Indexing](#raptor-like-indexing)
-            -   [Indexing Request](#indexing-request)
-            -   [Indexing Response](#indexing-response)
-        -   [Question Answering](#question-answering)
-    -   [Tech Stack](#tech-stack)
-    -   [Configuration \& Environments](#configuration--environments)
-    -   [References \& Attribution](#references--attribution)
-    -   [Contributing](#contributing)
-    -   [License](#license)
+- [Primer Chat 📚](#primer-chat-)
+  - [Overview](#overview)
+  - [Demo](#demo)
+  - [Key Features](#key-features)
+  - [Quick Start](#quick-start)
+  - [How It Works](#how-it-works)
+    - [RAPTOR-like Indexing](#raptor-like-indexing)
+      - [Indexing Request](#indexing-request)
+      - [Indexing Response](#indexing-response)
+    - [Question Answering](#question-answering)
+  - [Tech Stack](#tech-stack)
+  - [Configuration \& Environments](#configuration--environments)
+  - [References \& Attribution](#references--attribution)
+  - [Contributing](#contributing)
+  - [License](#license)
 
 ---
 
@@ -40,7 +39,7 @@ Upload documents, watch **real-time indexing**, and ask questions with **line-le
 -   **GIF (short flow)**
     ![Primer Chat — Demo](docs/assets/demo.gif)
 
-> 👉 **[Open Demo](http://109.120.142.57)**
+> 👉 **[Try Demo](http://109.120.142.57)**
 
 ## Key Features
 
@@ -55,9 +54,32 @@ Upload documents, watch **real-time indexing**, and ask questions with **line-le
 
 ## Quick Start
 
-> All flows use the project `Makefile`.
+-   **Production-like (full stack: infra + app + logging)**
+    ```bash
+    make up # build & start everything in detached mode
+    ```
 
-| Common Targets                        | Purpose                                 |
+*   **Development (infra only), run API/Web locally**
+
+    ```bash
+    make up-infra   # start only infra (DB, Redis, Kafka, S3/MinIO, etc.)
+    ```
+
+    Then run the **Services** and **Web** locally in dev mode (hot reload):
+
+    ```bash
+    # Services
+    cd services/...
+    uv run -m src.main
+    ```
+
+    ```bash
+    # Frontend
+    cd primer-chat
+    npm run dev  # http://localhost:5173
+    ```
+
+| Targets                               | Purpose                                 |
 | ------------------------------------- | --------------------------------------- |
 | `make up`                             | Build & start **infra + app + logging** |
 | `make down`                           | Stop full stack & remove orphans        |
@@ -70,37 +92,6 @@ Upload documents, watch **real-time indexing**, and ask questions with **line-le
 | `make ps-infra`                       | List infra containers                   |
 | `make logs-infra service=<name>`      | Tail logs for an infra service          |
 | `make postgres-clean`                 | **Remove** Postgres data volume         |
-
--   **Production-like (full stack: infra + app + logging)**
-    ```bash
-    make up                                     # build & start everything in detached mode
-    make down                                   # stop and remove stack (keeps volumes)
-    make ps                                     # show running containers
-    make logs service=api-gateway               # tail logs for a specific service
-    make exec service=api-gateway               # shell into a service container (/bin/sh)
-    make rebuild-service service=api-gateway    # rebuild and restart a single service
-    ```
-
-*   **Development (infra only), run API/Web locally**
-
-    ```bash
-    make up-infra                               # start only infra (DB, Redis, Kafka, S3/MinIO, etc.)
-    make ps-infra
-    make logs-infra service=postgres            # tail a single infra service
-    make down-infra
-    ```
-
-    > After `make up-infra`, run the **API** and **Web** locally in dev mode (hot reload):
-    >
-    > ```bash
-    > # Services
-    > cd services/...
-    > uv run -m src.main
-    >
-    > # Frontend
-    > cd primer-chat
-    > npm run dev  # http://localhost:5173
-    > ```
 
 ---
 
