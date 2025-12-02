@@ -3,7 +3,6 @@
 > **Chat with your PDFs — fast, grounded, and citation-first.**
 > Real-time RAG with **RAPTOR-style** hierarchical indexing, scalable workers, and a minimalist PDF viewer that highlights the exact fragments used.
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-Open-1f883d)](http://109.120.142.57)
 [![License: MIT](https://img.shields.io/badge/License-MIT-black.svg)](LICENSE)
 
 - [Primer Chat 📚](#primer-chat-)
@@ -33,13 +32,6 @@ Upload documents, watch **real-time indexation**, and ask questions with **line-
 -   **Scalable** — **horizontally scaled workers** for indexing/generation; stateless API.
 
 ---
-
-## Demo
-
--   **GIF (short flow)**
-    ![Primer Chat — Demo](docs/assets/demo.gif)
-
-> 👉 **[Open Demo](http://109.120.142.57)**
 
 ## Key Features
 
